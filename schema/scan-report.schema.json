@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cpmatch:security-skill:schema:scan-report:1.0.0",
+  "title": "ScanReport",
+  "description": "Canonical envelope for one security-skill scan run: run metadata plus the findings it produced. Decided 2026-07-22 (see meetings/2026-07-22-1056-plan-001-kickoff.md): single JSON object per scan run, not JSON Lines. Does NOT embed the policy verdict (block/require-review/ticket/notify) — that is produced separately by plans/003-policy-engine.md and plans/016-action-layer-integrations-gate.md, consuming this report as input.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scanId",
+    "repository",
+    "timestamp",
+    "toolVersion",
+    "summary",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Version of this scan-report schema (semver). Bump when the shape of ScanReport or Finding changes in a breaking way."
+    },
+    "scanId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this scan run."
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repository identifier (e.g. 'cpmatch/devops/some-service')."
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch scanned, if applicable."
+    },
+    "commit": {
+      "type": "string",
+      "description": "Commit SHA scanned."
+    },
+    "diffRange": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "base": { "type": "string" },
+        "head": { "type": "string" }
+      },
+      "required": ["base", "head"],
+      "description": "Present for diff/PR-scoped scans (per CONTEXT.md §5 inputs); null for full-repository scans."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the scan completed, ISO 8601."
+    },
+    "toolVersion": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Version of security-skill that produced this report."
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["critical", "high", "medium", "low", "info", "total"],
+      "properties": {
+        "critical": { "type": "integer", "minimum": 0 },
+        "high": { "type": "integer", "minimum": 0 },
+        "medium": { "type": "integer", "minimum": 0 },
+        "low": { "type": "integer", "minimum": 0 },
+        "info": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 }
+      },
+      "description": "Counts by severity across `findings` (including suppressed ones — suppressed findings are still counted here since they're still part of the audit trail; consumers that want an 'actionable only' count should filter findings by suppressed=false themselves)."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "finding.schema.json" },
+      "description": "All findings from this scan run, suppressed or not."
+    }
+  }
+}

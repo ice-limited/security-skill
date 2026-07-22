@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Security Review — cpmatch/devops/example-service</title>
+<style>
+body { font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; margin: 2rem auto; max-width: 900px; line-height: 1.5; color: #1f2937; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; }
+table { border-collapse: collapse; margin: 1rem 0; }
+th, td { border: 1px solid #e5e7eb; padding: 0.4rem 0.8rem; text-align: left; }
+.finding { border: 1px solid #e5e7eb; border-radius: 6px; padding: 1rem; margin: 1rem 0; }
+.finding h3 { margin-top: 0; }
+.badge { display: inline-block; color: white; border-radius: 4px; padding: 0.1rem 0.5rem; font-size: 0.8rem; font-weight: 600; }
+.meta { color: #6b7280; font-size: 0.9rem; }
+.suppressed { opacity: 0.6; }
+</style>
+</head>
+<body>
+<h1>Security Review — cpmatch/devops/example-service</h1>
+<p class="meta">branch <code>feature/payments</code> · commit <code>a1b2c3d4</code></p>
+<table>
+<thead><tr><th>Severity</th><th>Count</th></tr></thead>
+<tbody>
+<tr><td>Critical</td><td>1</td></tr>
+<tr><td>High</td><td>1</td></tr>
+<tr><td>Medium</td><td>1</td></tr>
+<tr><td>Low</td><td>1</td></tr>
+<tr><td>Info</td><td>0</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>4</strong></td></tr>
+</tbody>
+</table>
+<h2>Critical</h2>
+<div class="finding">
+  <span class="badge" style="background:#7f1d1d">Critical</span>
+  <h3>Hardcoded AWS access key</h3>
+  <p class="meta">
+    <code>config/deploy.env:4</code> ·
+    rule <code>secret.aws-access-key</code> ·
+    confidence 98% ·
+    <a href="https://cwe.mitre.org/data/definitions/798.html">CWE CWE-798</a>
+  </p>
+  <p><strong>Problem:</strong> An AWS access key ID and matching secret key are committed in plaintext.</p>
+  <p><strong>Impact:</strong> Anyone with read access to this repository can assume the associated AWS identity and access any resource it&#x27;s permitted to reach.</p>
+  <p><strong>Recommendation:</strong> Revoke the key immediately, move credentials to a secrets manager (e.g. AWS Secrets Manager, SSM Parameter Store), and use short-lived role assumption in CI instead of static keys.</p>
+  
+</div><h2>High</h2>
+<div class="finding">
+  <span class="badge" style="background:#b91c1c">High</span>
+  <h3>SQL query built via string concatenation</h3>
+  <p class="meta">
+    <code>src/handlers/orders.py:41</code> ·
+    rule <code>code-review.sqli.string-concat</code> ·
+    confidence 87% ·
+    <a href="https://cwe.mitre.org/data/definitions/89.html">CWE CWE-89</a>, OWASP-Top10 A03:2021
+  </p>
+  <p><strong>Problem:</strong> User-supplied `request.params.id` is concatenated directly into a SQL query string.</p>
+  <p><strong>Impact:</strong> An attacker can inject arbitrary SQL, potentially reading or modifying any data the database user can access.</p>
+  <p><strong>Recommendation:</strong> Use parameterized queries / prepared statements instead of string concatenation.</p>
+  
+</div><h2>Medium</h2>
+<div class="finding">
+  <span class="badge" style="background:#b45309">Medium</span>
+  <h3>Known vulnerability in requests 2.6.0</h3>
+  <p class="meta">
+    <code>requirements.lock:12</code> ·
+    rule <code>dependency.cve</code> ·
+    confidence 90% ·
+    CWE CWE-200
+  </p>
+  <p><strong>Problem:</strong> The pinned version of `requests` is affected by a disclosed CVE.</p>
+  <p><strong>Impact:</strong> Depending on usage, this can allow credential leakage via redirected requests.</p>
+  <p><strong>Recommendation:</strong> Upgrade `requests` to a patched version.</p>
+  
+</div><h2>Low</h2>
+<div class="finding suppressed">
+  <span class="badge" style="background:#1d4ed8">Low</span>
+  <h3>hostPath volume mounted in non-privileged workload</h3>
+  <p class="meta">
+    <code>deploy/statefulset.yaml:23-27</code> ·
+    rule <code>kubernetes.hostpath-mount</code> ·
+    confidence 70% ·
+    CWE CWE-668
+  </p>
+  <p><strong>Problem:</strong> A `hostPath` volume is mounted, giving the pod access to the node&#x27;s filesystem.</p>
+  <p><strong>Impact:</strong> If the container is compromised, an attacker can read/write files on the underlying node.</p>
+  <p><strong>Recommendation:</strong> Remove the hostPath mount or replace it with a scoped volume type (e.g. ConfigMap, PVC).</p>
+  <p class="meta">Suppressed: Intentional — used only in the local-dev overlay, excluded from prod overlay.</p>
+</div>
+</body>
+</html>

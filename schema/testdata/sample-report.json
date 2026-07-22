@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0.0",
+  "scanId": "scan-0001",
+  "repository": "cpmatch/devops/example-service",
+  "branch": "feature/payments",
+  "commit": "a1b2c3d4",
+  "diffRange": { "base": "main", "head": "a1b2c3d4" },
+  "timestamp": "2026-07-22T04:00:00Z",
+  "toolVersion": "0.1.0",
+  "summary": { "critical": 1, "high": 1, "medium": 1, "low": 1, "info": 0, "total": 4 },
+  "findings": [
+    {
+      "findingId": "f-aws-key-001",
+      "ruleId": "secret.aws-access-key",
+      "subSkill": "secret",
+      "artifactType": "config",
+      "title": "Hardcoded AWS access key",
+      "problem": "An AWS access key ID and matching secret key are committed in plaintext.",
+      "impact": "Anyone with read access to this repository can assume the associated AWS identity and access any resource it's permitted to reach.",
+      "recommendation": "Revoke the key immediately, move credentials to a secrets manager (e.g. AWS Secrets Manager, SSM Parameter Store), and use short-lived role assumption in CI instead of static keys.",
+      "references": [
+        { "standard": "CWE", "id": "CWE-798", "url": "https://cwe.mitre.org/data/definitions/798.html" }
+      ],
+      "severity": "Critical",
+      "confidence": 98,
+      "location": {
+        "file": "config/deploy.env",
+        "startLine": 4,
+        "endLine": 4,
+        "startByte": 62,
+        "endByte": 102
+      },
+      "detectorSource": { "name": "secret-detector", "version": "0.1.0" },
+      "suppressed": false
+    },
+    {
+      "findingId": "f-sqli-002",
+      "ruleId": "code-review.sqli.string-concat",
+      "subSkill": "code-review",
+      "artifactType": "source-code",
+      "title": "SQL query built via string concatenation",
+      "problem": "User-supplied `request.params.id` is concatenated directly into a SQL query string.",
+      "impact": "An attacker can inject arbitrary SQL, potentially reading or modifying any data the database user can access.",
+      "recommendation": "Use parameterized queries / prepared statements instead of string concatenation.",
+      "references": [
+        { "standard": "CWE", "id": "CWE-89", "url": "https://cwe.mitre.org/data/definitions/89.html" },
+        { "standard": "OWASP-Top10", "id": "A03:2021" }
+      ],
+      "severity": "High",
+      "confidence": 87,
+      "location": {
+        "file": "src/handlers/orders.py",
+        "startLine": 41,
+        "endLine": 41,
+        "startByte": 1180,
+        "endByte": 1235,
+        "astNodePath": "Module.FunctionDef[get_order].Call[execute]"
+      },
+      "detectorSource": { "name": "code-review-detector", "version": "0.1.0" },
+      "suppressed": false
+    },
+    {
+      "findingId": "f-cve-003",
+      "ruleId": "dependency.cve",
+      "subSkill": "dependency",
+      "artifactType": "package-lock",
+      "title": "Known vulnerability in requests 2.6.0",
+      "problem": "The pinned version of `requests` is affected by a disclosed CVE.",
+      "impact": "Depending on usage, this can allow credential leakage via redirected requests.",
+      "recommendation": "Upgrade `requests` to a patched version.",
+      "references": [
+        { "standard": "CWE", "id": "CWE-200" }
+      ],
+      "severity": "Medium",
+      "confidence": 90,
+      "location": {
+        "file": "requirements.lock",
+        "startLine": 12,
+        "endLine": 12
+      },
+      "detectorSource": { "name": "dependency-detector", "version": "0.1.0" },
+      "suppressed": false,
+      "metadata": { "cvssVector": "AV:N/AC:L/Au:N/C:P/I:N/A:N", "cvssScore": 5.0, "cve": "CVE-2015-2296" }
+    },
+    {
+      "findingId": "f-hostpath-004",
+      "ruleId": "kubernetes.hostpath-mount",
+      "subSkill": "kubernetes",
+      "artifactType": "kubernetes-yaml",
+      "title": "hostPath volume mounted in non-privileged workload",
+      "problem": "A `hostPath` volume is mounted, giving the pod access to the node's filesystem.",
+      "impact": "If the container is compromised, an attacker can read/write files on the underlying node.",
+      "recommendation": "Remove the hostPath mount or replace it with a scoped volume type (e.g. ConfigMap, PVC).",
+      "references": [
+        { "standard": "CWE", "id": "CWE-668" }
+      ],
+      "severity": "Low",
+      "confidence": 70,
+      "location": {
+        "file": "deploy/statefulset.yaml",
+        "startLine": 23,
+        "endLine": 27
+      },
+      "detectorSource": { "name": "kubernetes-detector", "version": "0.1.0" },
+      "suppressed": true,
+      "suppressionReason": "Intentional — used only in the local-dev overlay, excluded from prod overlay."
+    }
+  ]
+}
