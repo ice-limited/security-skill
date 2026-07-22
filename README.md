@@ -50,10 +50,12 @@ adapters/          Per-tool entry points (SKILL.md for Claude Code, AGENTS.md
                    (plans 017-019), not yet built or scaffolded.
 detectors/         Detection rules per sub-skill (code review, dependency,
                    iac, kubernetes, docker, api, secret, supply-chain) —
-                   reserved for Phase 1 (plans 006-014), not yet built or
-                   scaffolded. Planned layout: one subdirectory per
-                   sub-skill (detectors/secret/, detectors/code-review/,
-                   ...), each following the convention below.
+                   one subdirectory per sub-skill, each following the
+                   convention below.
+  secret/            Pattern + entropy hardcoded-secret detection
+                     (AWS/GCP/Azure keys, GitHub/GitLab PATs, JWTs,
+                     private keys, generic credentials). Implemented —
+                     see README.md in this directory.
 ```
 
 ### Directory-per-concern convention (plan 005)
@@ -111,6 +113,7 @@ cd ../knowledge && python3 -m unittest test_check_freshness -v      # mocked, no
 cd ../knowledge && RUN_LIVE_TESTS=1 python3 -m unittest test_check_freshness -v   # hits real GitHub API
 cd ../policy && python3 -m unittest test_engine -v
 cd ../decision && python3 -m unittest test_decision -v
+cd ../detectors/secret && python3 -m unittest test_scanner -v
 ```
 
 Windows: use `python` (not `python3` — not a standard command name on
