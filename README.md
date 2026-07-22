@@ -97,6 +97,16 @@ detectors/         Detection rules per sub-skill (code review, dependency,
                      no custom rules needed; natively renders and scans
                      Helm charts too, no `helm` CLI dependency at scan
                      time. Implemented — see README.md in this directory.
+  iac/               IaC misconfiguration: curated IAM + public-exposure
+                     checks across Terraform (AWS/Azure/GCP),
+                     CloudFormation (AWS), and Ansible playbook
+                     hardening (plan 011) — a thin wrapper around the
+                     Checkov CLI (subprocess), not Trivy — verified at
+                     kickoff that Trivy's AWS IAM-wildcard check is
+                     deprecated, GCP has no project-level IAM check at
+                     all, and Ansible has zero shipped Trivy checks.
+                     Helm dropped from scope entirely (redundant with
+                     010). Implemented — see README.md in this directory.
 ```
 
 ### Directory-per-concern convention (plan 005)
@@ -140,7 +150,7 @@ deeper-namespaced (e.g. `code-review.sqli.string-concat`). Already
 enforced by `finding.schema.json`'s own regex
 (`^[a-z0-9-]+(\.[a-z0-9-]+)+$`); every Phase 1 detector's rules follow
 this. Examples already in use: `secret.aws-access-key`,
-`dependency.cve`, `kubernetes.hostpath-volume`.
+`dependency.cve`, `kubernetes.hostpath-volume`, `iac.aws-iam-wildcard-actions`.
 
 ## Running the tests
 
@@ -163,6 +173,7 @@ cd ../docker && python3 -m unittest test_scanner -v   # requires real `trivy` on
 cd ../auth && python3 -m unittest test_playbook -v
 cd ../auth && python3 -m unittest test_semgrep_detector -v
 cd ../kubernetes && python3 -m unittest test_scanner -v   # requires real `trivy` on PATH + network for its checks bundle; Helm-specific tests also require real `helm` on PATH
+cd ../iac && pip install -r requirements.txt && python3 -m unittest test_scanner -v   # requires real `checkov` on PATH
 ```
 
 Windows: use `python` (not `python3` — not a standard command name on

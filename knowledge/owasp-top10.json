@@ -28,7 +28,8 @@
   },
   "A06:2025": {
     "title": "Insecure Design",
-    "url": "https://owasp.org/Top10/2025/A06_2025-Insecure_Design/"
+    "url": "https://owasp.org/Top10/2025/A06_2025-Insecure_Design/",
+    "relatedCwe": ["CWE-269"]
   },
   "A07:2025": {
     "title": "Authentication Failures",

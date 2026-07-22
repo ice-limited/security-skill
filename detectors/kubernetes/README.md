@@ -153,8 +153,13 @@ wrapper here).
 - File selection/exclusion — orchestration concern, same boundary as
   every other detector here.
 - Helm chart authoring issues that aren't about the rendered manifest
-  (chart structure, template logic correctness) — that's `iac`'s job
-  (011), not this one.
+  (chart structure, template logic correctness) — verified at 011's
+  kickoff that neither Trivy nor Checkov actually has a distinct
+  "chart authoring" check mode (both just render the chart and scan
+  the output as Kubernetes manifests, exactly what this module already
+  does), so 011 dropped Helm from its scope entirely rather than
+  duplicating this module. Nothing currently owns Helm chart authoring
+  as a distinct concern.
 - The ~15 additional Trivy Kubernetes checks beyond this plan's curated
   8-item scope — good candidates for a future scope expansion, not
   included in v1.
