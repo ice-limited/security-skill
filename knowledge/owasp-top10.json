@@ -14,7 +14,7 @@
   "A03:2025": {
     "title": "Software Supply Chain Failures",
     "url": "https://owasp.org/Top10/2025/A03_2025-Software_Supply_Chain_Failures/",
-    "relatedCwe": ["CWE-1104", "CWE-1395"]
+    "relatedCwe": ["CWE-1104", "CWE-1357", "CWE-1395"]
   },
   "A04:2025": {
     "title": "Cryptographic Failures",
@@ -38,7 +38,7 @@
   "A08:2025": {
     "title": "Software or Data Integrity Failures",
     "url": "https://owasp.org/Top10/2025/A08_2025-Software_or_Data_Integrity_Failures/",
-    "relatedCwe": ["CWE-502", "CWE-915"]
+    "relatedCwe": ["CWE-494", "CWE-502", "CWE-915"]
   },
   "A09:2025": {
     "title": "Security Logging and Alerting Failures",

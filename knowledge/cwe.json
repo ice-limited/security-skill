@@ -7,11 +7,13 @@
   "CWE-79": { "title": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')" },
   "CWE-89": { "title": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" },
   "CWE-200": { "title": "Exposure of Sensitive Information to an Unauthorized Actor" },
+  "CWE-250": { "title": "Execution with Unnecessary Privileges" },
   "CWE-287": { "title": "Improper Authentication" },
   "CWE-306": { "title": "Missing Authentication for Critical Function" },
   "CWE-327": { "title": "Use of a Broken or Risky Cryptographic Algorithm" },
   "CWE-362": { "title": "Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')" },
   "CWE-384": { "title": "Session Fixation" },
+  "CWE-494": { "title": "Download of Code Without Integrity Check" },
   "CWE-502": { "title": "Deserialization of Untrusted Data" },
   "CWE-506": { "title": "Embedded Malicious Code" },
   "CWE-601": { "title": "URL Redirection to Untrusted Site ('Open Redirect')" },
@@ -23,5 +25,6 @@
   "CWE-915": { "title": "Improperly Controlled Modification of Dynamically-Determined Object Attributes" },
   "CWE-918": { "title": "Server-Side Request Forgery (SSRF)" },
   "CWE-1104": { "title": "Use of Unmaintained Third Party Components" },
+  "CWE-1357": { "title": "Reliance on Insufficiently Trustworthy Component" },
   "CWE-1395": { "title": "Dependency on Vulnerable Third-Party Component" }
 }
