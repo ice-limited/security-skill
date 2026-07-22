@@ -8,8 +8,13 @@ from __future__ import annotations
 
 import json
 import sys
+from pathlib import Path
 
 from _common import SEVERITY_ORDER, format_location, format_references, group_by_severity
+
+_common_dir = next(p for p in Path(__file__).resolve().parents if (p / "common").is_dir()) / "common"
+sys.path.insert(0, str(_common_dir))
+from streams import reconfigure_streams  # noqa: E402
 
 
 def render_markdown(report: dict) -> str:
@@ -67,7 +72,6 @@ if __name__ == "__main__":
     # Windows) would otherwise raise UnicodeDecodeError/UnicodeEncodeError
     # on the non-ASCII characters this codebase's data already contains.
     # See plans/022-cross-platform-compatibility.md.
-    sys.stdin.reconfigure(encoding="utf-8")
-    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    reconfigure_streams(stdin=True)
     data = json.load(sys.stdin)
     sys.stdout.write(render_markdown(data))

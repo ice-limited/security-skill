@@ -10,8 +10,12 @@ import json
 import sys
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
+
+_common_dir = next(p for p in Path(__file__).resolve().parents if (p / "common").is_dir()) / "common"
+sys.path.insert(0, str(_common_dir))
+from schema_validation import validate_against_schema  # noqa: E402
+from streams import reconfigure_streams  # noqa: E402
 
 SCHEMA_DIR = Path(__file__).parent
 
@@ -30,15 +34,12 @@ def validate_report(report: dict) -> list[str]:
             ("finding.schema.json", Resource.from_contents(finding_schema)),
         ]
     )
-    validator = Draft202012Validator(scan_report_schema, registry=registry)
-
-    return [f"{'/'.join(str(p) for p in e.path)}: {e.message}" for e in validator.iter_errors(report)]
+    return validate_against_schema(scan_report_schema, report, registry=registry)
 
 
 if __name__ == "__main__":
     # See plans/022-cross-platform-compatibility.md.
-    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
-    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
+    reconfigure_streams()
     report_path = Path(sys.argv[1])
     report = json.loads(report_path.read_text(encoding="utf-8"))
     errors = validate_report(report)

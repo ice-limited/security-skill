@@ -29,6 +29,9 @@ use the macOS/Linux (`bash`/`zsh`) form; see each command's Windows note.
 ## Layout
 
 ```
+common/            Shared utilities: stdio UTF-8 reconfiguration, JSON
+                   Schema validation. Implemented — see README.md in
+                   this directory.
 schema/            Finding schema (JSON canonical) + Markdown/HTML renderers.
                     Implemented — see finding.schema.json,
                     scan-report.schema.json, render_markdown.py,
@@ -43,18 +46,66 @@ decision/          Exact-duplicate dedup + exception-based suppression,
                    sits between detectors and policy/. Implemented — see
                    README.md in this directory.
 adapters/          Per-tool entry points (SKILL.md for Claude Code, AGENTS.md
-                   for Codex/OpenCode/Cursor/etc.) — planned, not yet built.
+                   for Codex/OpenCode/Cursor/etc.) — reserved for Phase 3
+                   (plans 017-019), not yet built or scaffolded.
 detectors/         Detection rules per sub-skill (code review, dependency,
                    iac, kubernetes, docker, api, secret, supply-chain) —
-                   planned, not yet built.
+                   reserved for Phase 1 (plans 006-014), not yet built or
+                   scaffolded. Planned layout: one subdirectory per
+                   sub-skill (detectors/secret/, detectors/code-review/,
+                   ...), each following the convention below.
 ```
+
+### Directory-per-concern convention (plan 005)
+
+`schema/`, `knowledge/`, `policy/`, `decision/` all converged on the same
+shape independently — this is now the standard for every new concern
+directory, including each `detectors/{sub-skill}/` in Phase 1:
+
+- One or more `*.schema.json` (or other data) file(s) — the concern's
+  canonical data/config shape.
+- A core `.py` module with the concern's actual logic, callable as both
+  a library (`import x; x.some_function(...)`) and a CLI
+  (`python3 x.py args`), the latter via a testable `main(argv=None)`
+  kept separate from the `if __name__ == "__main__":` guard.
+- `validate.py`, if the concern has its own config/data schema.
+- `test_*.py` — including `CrossPlatformEncodingTests` and
+  `SourceEncodingAuditTests` from day one (plan 022's binding
+  requirement, see CONTEXT.md §2 in the security-skill-workspace repo).
+- `README.md`.
+
+Cross-directory imports (e.g. a detector using `common/`) use a
+`sys.path.insert` at the top of the importing file — this repo has no
+package/install infrastructure (no `pyproject.toml`, no `__init__.py`)
+by design, matching every module already here. **Walk upward looking for
+`common/`, don't hardcode a fixed number of `.parent`s** — a fixed depth
+(e.g. `.parent.parent`) happens to work for today's 1-level-deep
+directories (`schema/`, `knowledge/`, `policy/`, `decision/`) but breaks
+silently for Phase 1's 2-level-deep `detectors/{sub-skill}/` layout. This
+was a real bug caught while testing plan 005, not a hypothetical:
+
+```python
+_common_dir = next(p for p in Path(__file__).resolve().parents if (p / "common").is_dir()) / "common"
+sys.path.insert(0, str(_common_dir))
+from streams import reconfigure_streams
+```
+
+### `ruleId` naming convention
+
+Dot-namespaced, lowercase-kebab: `{subSkill}.{rule-name}`, optionally
+deeper-namespaced (e.g. `code-review.sqli.string-concat`). Already
+enforced by `finding.schema.json`'s own regex
+(`^[a-z0-9-]+(\.[a-z0-9-]+)+$`); every Phase 1 detector's rules follow
+this. Examples already in use: `secret.aws-access-key`,
+`dependency.cve`, `kubernetes.hostpath-mount`.
 
 ## Running the tests
 
 macOS/Linux (`bash`/`zsh`):
 
 ```
-cd schema && pip install -r requirements.txt && python3 -m unittest test_renderers -v
+cd common && python3 -m unittest test_common -v
+cd ../schema && pip install -r requirements.txt && python3 -m unittest test_renderers -v
 cd ../knowledge && python3 -m unittest test_knowledge -v
 cd ../knowledge && python3 -m unittest test_check_freshness -v      # mocked, no network
 cd ../knowledge && RUN_LIVE_TESTS=1 python3 -m unittest test_check_freshness -v   # hits real GitHub API

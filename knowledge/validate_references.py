@@ -18,6 +18,10 @@ from pathlib import Path
 
 import standards
 
+_common_dir = next(p for p in Path(__file__).resolve().parents if (p / "common").is_dir()) / "common"
+sys.path.insert(0, str(_common_dir))
+from streams import reconfigure_streams  # noqa: E402
+
 
 def find_unknown_references(report: dict) -> list[str]:
     problems = []
@@ -34,8 +38,7 @@ def find_unknown_references(report: dict) -> list[str]:
 
 if __name__ == "__main__":
     # See plans/022-cross-platform-compatibility.md.
-    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
-    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
+    reconfigure_streams()
     report_path = Path(sys.argv[1])
     report = json.loads(report_path.read_text(encoding="utf-8"))
     problems = find_unknown_references(report)

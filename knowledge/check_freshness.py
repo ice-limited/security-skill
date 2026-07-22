@@ -28,6 +28,10 @@ import urllib.request
 from pathlib import Path
 from typing import Callable
 
+_common_dir = next(p for p in Path(__file__).resolve().parents if (p / "common").is_dir()) / "common"
+sys.path.insert(0, str(_common_dir))
+from streams import reconfigure_streams  # noqa: E402
+
 KNOWLEDGE_DIR = Path(__file__).parent
 
 # (knowledge file, GitHub repo, path within repo, folder-name shape)
@@ -199,7 +203,7 @@ def main(results: list[dict] | None = None) -> int:
 if __name__ == "__main__":
     # Reconfigured here, not inside main(), so tests that redirect
     # stdout/stderr to an io.StringIO (which has no .reconfigure()) can
-    # still call main() directly. See plans/022-cross-platform-compatibility.md.
-    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
-    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
+    # still call main() directly. See plans/022-cross-platform-compatibility.md
+    # and common/streams.py.
+    reconfigure_streams()
     sys.exit(main())
