@@ -11,7 +11,7 @@ per-tool adapters.
 ## Status
 
 Early implementation. Architecture, planning, and feature specs live in the
-[security-skill-workspace](https://git.cpmplatform.com/cpmatch/devops/security-skill/workspace)
+[security-skill-workspace](https://git.cpmplatform.com/cpmatch/ai-security-skill/workspace)
 repo — see `CONTEXT.md` there before contributing here. Plan status for
 everything in `plans/` there is the source of truth for what's actually
 done vs. still `todo`.
