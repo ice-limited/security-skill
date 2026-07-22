@@ -32,7 +32,10 @@ use the macOS/Linux (`bash`/`zsh`) form; see each command's Windows note.
 common/            Shared utilities: stdio UTF-8 reconfiguration, JSON
                    Schema validation, Semgrep CLI wrapper (subprocess
                    + result-to-finding.schema.json mapping, shared by
-                   detectors/code-review/ and detectors/auth/).
+                   detectors/code-review/ and detectors/auth/), Trivy
+                   CLI wrapper (subprocess + result-to-finding.schema.json
+                   mapping, shared by detectors/docker/ and
+                   detectors/kubernetes/).
                    Implemented — see README.md in this directory.
 schema/            Finding schema (JSON canonical) + Markdown/HTML renderers.
                     Implemented — see finding.schema.json,
@@ -85,6 +88,15 @@ detectors/         Detection rules per sub-skill (code review, dependency,
                      for JWT signature/algorithm bypass, the one
                      pattern Semgrep covers well here). Both halves
                      implemented. See README.md in this directory.
+  kubernetes/        Workload hardening: hostNetwork/hostPID/hostPath,
+                     privileged/root containers, unpinned `:latest`
+                     tags, missing CPU/memory limits, writable root
+                     filesystems (plan 010) — a thin wrapper around
+                     Trivy's `config` scan mode (subprocess, shared
+                     with detectors/docker/ via common/trivy_wrapper.py),
+                     no custom rules needed; natively renders and scans
+                     Helm charts too, no `helm` CLI dependency at scan
+                     time. Implemented — see README.md in this directory.
 ```
 
 ### Directory-per-concern convention (plan 005)
@@ -128,7 +140,7 @@ deeper-namespaced (e.g. `code-review.sqli.string-concat`). Already
 enforced by `finding.schema.json`'s own regex
 (`^[a-z0-9-]+(\.[a-z0-9-]+)+$`); every Phase 1 detector's rules follow
 this. Examples already in use: `secret.aws-access-key`,
-`dependency.cve`, `kubernetes.hostpath-mount`.
+`dependency.cve`, `kubernetes.hostpath-volume`.
 
 ## Running the tests
 
@@ -137,6 +149,7 @@ macOS/Linux (`bash`/`zsh`):
 ```
 cd common && python3 -m unittest test_common -v
 cd common && python3 -m unittest test_semgrep_wrapper -v   # requires real `semgrep` on PATH for its subprocess tests (skipped, not failed, if absent)
+cd common && python3 -m unittest test_trivy_wrapper -v   # requires real `trivy` on PATH for its subprocess tests (skipped, not failed, if absent)
 cd ../schema && pip install -r requirements.txt && python3 -m unittest test_renderers -v
 cd ../knowledge && python3 -m unittest test_knowledge -v
 cd ../knowledge && python3 -m unittest test_check_freshness -v      # mocked, no network
@@ -149,6 +162,7 @@ cd ../dependency && python3 -m unittest test_scanner -v   # requires real `osv-s
 cd ../docker && python3 -m unittest test_scanner -v   # requires real `trivy` on PATH + network for its checks bundle
 cd ../auth && python3 -m unittest test_playbook -v
 cd ../auth && python3 -m unittest test_semgrep_detector -v
+cd ../kubernetes && python3 -m unittest test_scanner -v   # requires real `trivy` on PATH + network for its checks bundle; Helm-specific tests also require real `helm` on PATH
 ```
 
 Windows: use `python` (not `python3` — not a standard command name on

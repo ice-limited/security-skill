@@ -4,7 +4,7 @@
   "A01:2025": {
     "title": "Broken Access Control",
     "url": "https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/",
-    "relatedCwe": ["CWE-22", "CWE-200", "CWE-601", "CWE-639", "CWE-668", "CWE-862", "CWE-863", "CWE-918"]
+    "relatedCwe": ["CWE-22", "CWE-200", "CWE-601", "CWE-639", "CWE-668", "CWE-732", "CWE-862", "CWE-863", "CWE-918"]
   },
   "A02:2025": {
     "title": "Security Misconfiguration",

@@ -10,28 +10,32 @@ broader for some checks — see plans/009-docker-skill.md and
 meetings/2026-07-22-1900-plan-009-kickoff.md in the
 security-skill-workspace repo for design rationale and the exact
 verification each mapping choice below was derived from.
+
+The actual subprocess/mapping logic lives in common/trivy_wrapper.py
+— extracted there once 010's Kubernetes sub-skill needed the exact
+same Trivy invocation/mapping mechanics, per plan 005's "shared module
+once a second consumer exists" precedent (mirrors
+common/semgrep_wrapper.py, shared between 007 and 023). This module is
+now a thin, subSkill-specific wrapper over it: its own rule catalog
+(rules.py) and its own custom-rules layer (apt-get upgrade/curl | bash/
+ADD-vs-COPY — Docker-specific, not shared).
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
-import shutil
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 from rules import ARCHIVE_EXTENSIONS, CUSTOM_RULES, TRIVY_RULES, CustomRule
 
 _common_dir = next(p for p in Path(__file__).resolve().parents if (p / "common").is_dir()) / "common"
 sys.path.insert(0, str(_common_dir))
+import trivy_wrapper as _tw  # noqa: E402
 from streams import reconfigure_streams  # noqa: E402
 
 DETECTOR_NAME = "docker-trivy-wrapper"
-TRIVY_VERSION_UNKNOWN = "unknown"
-
-_TRIVY_SEVERITY_MAP = {"CRITICAL": "Critical", "HIGH": "High", "MEDIUM": "Medium", "LOW": "Low", "UNKNOWN": "Medium"}
+TRIVY_VERSION_UNKNOWN = _tw.TRIVY_VERSION_UNKNOWN
 
 # DS-0031 (secrets in ENV/build-args) is Trivy's own built-in check,
 # found unexpectedly while verifying this plan at kickoff — excluded so
@@ -41,69 +45,15 @@ _TRIVY_SEVERITY_MAP = {"CRITICAL": "Critical", "HIGH": "High", "MEDIUM": "Medium
 # repo, which could collide with one the target repo already has).
 _EXCLUDED_TRIVY_CHECK_IDS = ("DS-0031",)
 
-
-class ScannerError(Exception):
-    """Raised for a real invocation failure (trivy missing, a bad
-    invocation) — fail loud rather than silently returning an empty
-    findings list, which would look identical to "scanned cleanly, no
-    issues found"."""
-
-
-def _check_trivy_available() -> None:
-    if shutil.which("trivy") is None:
-        raise ScannerError(
-            "trivy CLI not found on PATH. Install with 'brew install trivy' or a prebuilt binary "
-            "(Scoop/WinGet on Windows) — see plans/009-docker-skill.md."
-        )
+ScannerError = _tw.ScannerError
 
 
 def run_trivy(path: str) -> dict:
-    """Invokes the real trivy CLI (`config` scan mode) against exactly
-    one path and returns its parsed JSON output.
-
-    Only one path per invocation — verified for real at implementation
-    that `trivy config` rejects more than one target with a FATAL
-    "multiple targets cannot be specified" error, unlike 007's Semgrep
-    or 008's osv-scanner, which both accept a path list. `scan_paths()`
-    below invokes this once per path and aggregates, rather than trying
-    to pass a list through in one call.
-
-    Not mocked anywhere in this module or its tests — same discipline
-    as 007/008's external-tool wrappers."""
-    _check_trivy_available()
-    with tempfile.NamedTemporaryFile("w", suffix=".trivyignore", delete=False, encoding="utf-8") as f:
-        f.write("\n".join(_EXCLUDED_TRIVY_CHECK_IDS) + "\n")
-        ignore_path = f.name
-
-    try:
-        cmd = ["trivy", "config", "--format", "json", "--ignorefile", ignore_path, path]
-        try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
-        except FileNotFoundError as e:  # pragma: no cover - _check_trivy_available covers the common case
-            raise ScannerError(f"failed to execute trivy: {e}") from e
-
-        # Verified at implementation: unlike 008's osv-scanner, trivy's
-        # exit code IS a reliable success/failure signal on its own —
-        # 0 regardless of findings, nonzero (confirmed rc=1) only for a
-        # genuine invocation failure (bad path, etc.), with FATAL-
-        # prefixed stderr and empty stdout in that case.
-        if proc.returncode != 0:
-            raise ScannerError(f"trivy exited {proc.returncode}: {proc.stderr.strip()[-2000:]}")
-
-        try:
-            output = json.loads(proc.stdout)
-        except json.JSONDecodeError as e:
-            raise ScannerError(f"trivy did not return valid JSON: {e}") from e
-    finally:
-        Path(ignore_path).unlink(missing_ok=True)
-
-    return output
+    return _tw.run_trivy(path, excluded_check_ids=_EXCLUDED_TRIVY_CHECK_IDS)
 
 
 def _finding_id(rule_id: str, file: str, start_line: int, end_line: int, discriminator: str) -> str:
-    key = f"{rule_id}|{file}|{start_line}|{end_line}|{discriminator}"
-    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
-    return f"docker-{digest}"
+    return _tw.finding_id("docker", rule_id, file, start_line, end_line, discriminator)
 
 
 def map_trivy_misconfig(misconfig: dict, file: str, artifact_type: str, trivy_version: str) -> dict | None:
@@ -113,31 +63,16 @@ def map_trivy_misconfig(misconfig: dict, file: str, artifact_type: str, trivy_ve
     this plan doesn't have a curated mapping for (Trivy's `config` scan
     has many more general-purpose checks beyond this plan's declared
     scope) — silently skipped, not an error."""
-    rule = TRIVY_RULES.get(misconfig["ID"])
-    if rule is None:
-        return None
-
-    cause = misconfig.get("CauseMetadata", {})
-    start_line = cause.get("StartLine") or 1
-    end_line = cause.get("EndLine") or start_line
-    severity = _TRIVY_SEVERITY_MAP.get((misconfig.get("Severity") or "").upper(), "Medium")
-
-    return {
-        "findingId": _finding_id(rule.rule_id, file, start_line, end_line, misconfig["ID"]),
-        "ruleId": rule.rule_id,
-        "subSkill": "docker",
-        "artifactType": artifact_type,
-        "title": rule.title,
-        "problem": rule.problem,
-        "impact": rule.impact,
-        "recommendation": rule.recommendation,
-        "references": rule.references,
-        "severity": severity,
-        "confidence": rule.confidence,
-        "location": {"file": file, "startLine": start_line, "endLine": end_line},
-        "detectorSource": {"name": DETECTOR_NAME, "version": trivy_version},
-        "suppressed": False,
-    }
+    return _tw.map_trivy_misconfig(
+        misconfig,
+        file,
+        artifact_type,
+        trivy_version,
+        sub_skill="docker",
+        rule_catalog=TRIVY_RULES,
+        id_prefix="docker",
+        detector_name=DETECTOR_NAME,
+    )
 
 
 def _build_custom_finding(rule: CustomRule, file: str, start_line: int, end_line: int, artifact_type: str) -> dict:
@@ -239,17 +174,7 @@ def scan_custom_rules(content: str, file: str, artifact_type: str = "dockerfile"
 
 
 def _resolve_target_path(artifact_name: str, target: str) -> Path:
-    """Trivy's per-result `Target` is always relative to whatever root
-    it scanned (e.g. "Dockerfile"), never an absolute or CWD-relative
-    path on its own — verified for real at implementation, where this
-    was a genuine bug: reading `Target` directly silently failed
-    whenever the scanned path differed from the process's current
-    working directory. The top-level `ArtifactName` gives the resolved
-    root that was actually scanned (a directory, or the file itself if
-    a single file was scanned directly) — join them for a real,
-    readable path."""
-    root = Path(artifact_name)
-    return root / target if root.is_dir() else root
+    return _tw.resolve_target_path(artifact_name, target)
 
 
 def scan_paths(paths: list[str], artifact_type: str = "dockerfile") -> list[dict]:
@@ -261,25 +186,19 @@ def scan_paths(paths: list[str], artifact_type: str = "dockerfile") -> list[dict
 
     Invokes Trivy once per path, not once for the whole list — verified
     for real that `trivy config` rejects more than one target per
-    invocation (see run_trivy())."""
+    invocation (see common/trivy_wrapper.py's run_trivy())."""
     findings = []
-    for path in paths:
-        output = run_trivy(str(path))
-        trivy_version = output.get("Trivy", {}).get("Version", TRIVY_VERSION_UNKNOWN)
-        artifact_name = output.get("ArtifactName", str(path))
+    for file, result, trivy_version in _tw.iter_scanned_files(paths, excluded_check_ids=_EXCLUDED_TRIVY_CHECK_IDS):
+        for misconfig in result.get("Misconfigurations") or []:
+            mapped = map_trivy_misconfig(misconfig, file, artifact_type, trivy_version)
+            if mapped is not None:
+                findings.append(mapped)
 
-        for result in output.get("Results") or []:
-            file = str(_resolve_target_path(artifact_name, result.get("Target", "")))
-            for misconfig in result.get("Misconfigurations") or []:
-                mapped = map_trivy_misconfig(misconfig, file, artifact_type, trivy_version)
-                if mapped is not None:
-                    findings.append(mapped)
-
-            try:
-                content = Path(file).read_text(encoding="utf-8")
-            except OSError:
-                continue
-            findings.extend(scan_custom_rules(content, file, artifact_type))
+        try:
+            content = Path(file).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        findings.extend(scan_custom_rules(content, file, artifact_type))
 
     return findings
 

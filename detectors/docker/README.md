@@ -71,6 +71,24 @@ not just interactively.
    file itself if a single file was scanned directly). See
    `_resolve_target_path()`.
 
+## Shared with detectors/kubernetes/ (plan 010)
+
+The Trivy subprocess invocation, `--ignorefile` exclusion mechanism,
+`Target`-path resolution, and result-to-finding mapping described below
+were extracted to `common/trivy_wrapper.py` once 010 (Kubernetes)
+needed the exact same mechanics against the exact same `trivy config`
+scan mode — only the rule catalog differs between the two plans. This
+module is now a thin wrapper over it (`import trivy_wrapper as _tw`),
+mirroring how `common/semgrep_wrapper.py` is shared between 007 and
+023. All 30 of this module's tests were re-verified to pass unmodified
+after the extraction (aside from two `mock.patch` targets moving from
+`scanner.shutil.which`/`scanner.subprocess.run` to
+`scanner._tw.shutil.which`/`scanner._tw.subprocess.run`, since the real
+subprocess calls now live in the shared module). See
+`common/test_trivy_wrapper.py` for direct tests of the generic logic
+itself (especially the `excluded_check_ids` parametrization axis this
+module always exercises with `DS-0031` set, but 010 never does).
+
 ## Error handling — verified against real Trivy behavior, not assumed
 
 Unlike 008's osv-scanner, Trivy's exit code **is** a reliable
@@ -136,7 +154,10 @@ discipline as every prior external-tool wrapper here).
   every other detector here.
 - Secrets in `ENV`/build-args — 006's job exclusively (Trivy's own
   overlapping check is excluded, not supplemented).
-- What happens once the image runs in a cluster — 010 (Kubernetes).
+- What happens once the image runs in a cluster —
+  `detectors/kubernetes/` (010), which shares this module's
+  `common/trivy_wrapper.py` but has its own rule catalog and no custom
+  rules.
 - Whether Trivy's `config` scan can run fully offline after the first
   checks-bundle download — observed cached locally in this
   environment, not independently verified fresh.

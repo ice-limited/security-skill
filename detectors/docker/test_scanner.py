@@ -218,7 +218,7 @@ class ErrorHandlingTests(unittest.TestCase):
             scanner.scan_paths(["/tmp/definitely-does-not-exist-009-dockerfile"])
 
     def test_missing_trivy_binary_raises_actionable_error(self) -> None:
-        with mock.patch("scanner.shutil.which", return_value=None):
+        with mock.patch("scanner._tw.shutil.which", return_value=None):
             with self.assertRaises(ScannerError) as ctx:
                 scanner.run_trivy("irrelevant")
         self.assertIn("brew install trivy", str(ctx.exception))
@@ -229,7 +229,7 @@ class ErrorHandlingTests(unittest.TestCase):
         # stdout, which would independently fail JSON parsing and mask
         # whether the return-code check does anything).
         fake_proc = mock.Mock(returncode=1, stdout='{"Results": []}', stderr="mocked failure")
-        with mock.patch("scanner.subprocess.run", return_value=fake_proc):
+        with mock.patch("scanner._tw.subprocess.run", return_value=fake_proc):
             with self.assertRaises(ScannerError):
                 scanner.run_trivy("irrelevant")
 
