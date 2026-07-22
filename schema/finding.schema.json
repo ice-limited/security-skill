@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:cpmatch:security-skill:schema:finding:1.0.0",
+  "$id": "urn:cpmatch:security-skill:schema:finding:1.1.0",
   "title": "Finding",
   "description": "Canonical shape for a single security finding, emitted by any security-skill detector. See plans/001-finding-schema-output.md and meetings/2026-07-22-1056-plan-001-kickoff.md in the security-skill-workspace repo for design rationale.",
   "type": "object",
@@ -37,6 +37,7 @@
       "enum": [
         "secret",
         "code-review",
+        "auth",
         "dependency",
         "docker",
         "kubernetes",
@@ -44,7 +45,7 @@
         "api",
         "supply-chain"
       ],
-      "description": "Which sub-skill produced this finding. NOTE: 'cicd-pipeline' is intentionally not yet a valid value pending confirmation in plans/013-cicd-pipeline-skill.md — adding it requires a schemaVersion bump."
+      "description": "Which sub-skill produced this finding. 'auth' added in schemaVersion 1.1.0 (plan 023 kickoff, 2026-07-22) — Broken AuthN/AuthZ split off from 'code-review' into its own plan-tracked sub-skill rather than reusing that value, since CONTEXT.md's split decision treats it as distinct enough to want independent policy/reporting grouping. NOTE: 'cicd-pipeline' is intentionally not yet a valid value pending confirmation in plans/013-cicd-pipeline-skill.md — adding it requires a schemaVersion bump, same as 'auth' did."
     },
     "artifactType": {
       "type": "string",

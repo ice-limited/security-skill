@@ -7,13 +7,18 @@
   "CWE-79": { "title": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')" },
   "CWE-89": { "title": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" },
   "CWE-200": { "title": "Exposure of Sensitive Information to an Unauthorized Actor" },
+  "CWE-287": { "title": "Improper Authentication" },
   "CWE-306": { "title": "Missing Authentication for Critical Function" },
+  "CWE-327": { "title": "Use of a Broken or Risky Cryptographic Algorithm" },
   "CWE-362": { "title": "Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')" },
+  "CWE-384": { "title": "Session Fixation" },
   "CWE-502": { "title": "Deserialization of Untrusted Data" },
   "CWE-601": { "title": "URL Redirection to Untrusted Site ('Open Redirect')" },
+  "CWE-639": { "title": "Authorization Bypass Through User-Controlled Key" },
   "CWE-668": { "title": "Exposure of Resource to Wrong Sphere" },
   "CWE-798": { "title": "Use of Hard-coded Credentials" },
   "CWE-862": { "title": "Missing Authorization" },
+  "CWE-863": { "title": "Incorrect Authorization" },
   "CWE-915": { "title": "Improperly Controlled Modification of Dynamically-Determined Object Attributes" },
   "CWE-918": { "title": "Server-Side Request Forgery (SSRF)" }
 }

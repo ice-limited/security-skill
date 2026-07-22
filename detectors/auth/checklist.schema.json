@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-skill.cpmatch.internal/detectors/auth/checklist.schema.json",
+  "title": "AuthN/AuthZ Playbook Checklist",
+  "description": "One entry per weakness pattern the invoking AI agent should look for when reviewing code for Broken Authentication / Broken Authorization (plan 023). Unlike detectors/secret or the planned detectors/code-review, this sub-skill has no deterministic scanner for most of cpmatch's stack (see plans/023-authn-authz-code-review-skill.md) — the agent reads this checklist and reasons over the code directly. A finding the agent produces from an item here must still conform to finding.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/checklistItem" }
+    }
+  },
+  "$defs": {
+    "checklistItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ruleId",
+        "weaknessClass",
+        "title",
+        "guidance",
+        "evidenceRequirement",
+        "references",
+        "suggestedSeverity",
+        "confidenceGuidance",
+        "problemTemplate",
+        "impactTemplate",
+        "recommendationTemplate"
+      ],
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$",
+          "description": "The ruleId the agent must stamp on any finding.schema.json finding it produces from this item — same naming convention as every other sub-skill (e.g. 'auth.missing-authorization-check')."
+        },
+        "weaknessClass": {
+          "type": "string",
+          "enum": ["broken-authentication", "broken-authorization"]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "guidance": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Concrete instruction to the agent on what to look for in the code — not a restatement of the CWE definition."
+        },
+        "evidenceRequirement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What counts as sufficient evidence before reporting this as a finding, not a suspicion — per the kickoff's evidentiary-rigor requirement (see meetings/2026-07-22-1500-plan-023-kickoff.md)."
+        },
+        "languageNotes": {
+          "type": "object",
+          "description": "Optional per-language/framework idioms to check for (e.g. which decorator/middleware pattern to look for in that ecosystem). Not required for every item — the core guidance is language-agnostic; this only adds concrete, language-specific things to grep for.",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["standard", "id"],
+            "properties": {
+              "standard": {
+                "type": "string",
+                "enum": [
+                  "OWASP-Top10",
+                  "OWASP-ASVS",
+                  "OWASP-API-Top10",
+                  "CWE",
+                  "CAPEC",
+                  "MITRE-ATTACK",
+                  "NIST-SSDF",
+                  "CERT-Secure-Coding"
+                ]
+              },
+              "id": { "type": "string", "minLength": 1 }
+            }
+          },
+          "description": "Same shape as finding.schema.json's references[] — reused directly so an agent-produced finding's references can be copied straight from here."
+        },
+        "suggestedSeverity": {
+          "type": "string",
+          "enum": ["Critical", "High", "Medium", "Low", "Info"],
+          "description": "A default suggestion, not a hard rule (unlike 006, where severity is always Critical) — AuthN/AuthZ impact varies by what the exposed resource/action actually is. The agent may adjust based on context, but must not adjust silently: see confidenceGuidance."
+        },
+        "confidenceGuidance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["defaultMax", "rationale"],
+          "properties": {
+            "defaultMax": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Upper bound the agent should self-report for a playbook-derived finding of this item, absent stronger corroboration — deliberately lower than a deterministic detector's typical confidence (see kickoff: playbook findings carry the same evidentiary bar but inherently more reasoning uncertainty than a regex/AST match)."
+            },
+            "rationale": { "type": "string", "minLength": 1 }
+          }
+        },
+        "problemTemplate": { "type": "string", "minLength": 1 },
+        "impactTemplate": { "type": "string", "minLength": 1 },
+        "recommendationTemplate": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

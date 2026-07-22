@@ -30,8 +30,10 @@ use the macOS/Linux (`bash`/`zsh`) form; see each command's Windows note.
 
 ```
 common/            Shared utilities: stdio UTF-8 reconfiguration, JSON
-                   Schema validation. Implemented — see README.md in
-                   this directory.
+                   Schema validation, Semgrep CLI wrapper (subprocess
+                   + result-to-finding.schema.json mapping, shared by
+                   detectors/code-review/ and detectors/auth/).
+                   Implemented — see README.md in this directory.
 schema/            Finding schema (JSON canonical) + Markdown/HTML renderers.
                     Implemented — see finding.schema.json,
                     scan-report.schema.json, render_markdown.py,
@@ -56,6 +58,20 @@ detectors/         Detection rules per sub-skill (code review, dependency,
                      (AWS/GCP/Azure keys, GitHub/GitLab PATs, JWTs,
                      private keys, generic credentials). Implemented —
                      see README.md in this directory.
+  code-review/       Injection & Request-Forgery classes (SQLi, XSS,
+                     SSRF, Command Injection), plan 007 — a thin
+                     wrapper around the Semgrep CLI (subprocess), not a
+                     from-scratch engine. Implemented — see README.md
+                     in this directory.
+  auth/              AuthN/AuthZ code review (plan 023) — hybrid:
+                     playbook.py (a checklist the invoking AI agent
+                     reasons over directly — the primary mechanism,
+                     Semgrep's registry coverage for this class is too
+                     patchy across cpmatch's stack) plus
+                     semgrep_detector.py (a narrow deterministic subset
+                     for JWT signature/algorithm bypass, the one
+                     pattern Semgrep covers well here). Both halves
+                     implemented. See README.md in this directory.
 ```
 
 ### Directory-per-concern convention (plan 005)
@@ -107,6 +123,7 @@ macOS/Linux (`bash`/`zsh`):
 
 ```
 cd common && python3 -m unittest test_common -v
+cd common && python3 -m unittest test_semgrep_wrapper -v   # requires real `semgrep` on PATH for its subprocess tests (skipped, not failed, if absent)
 cd ../schema && pip install -r requirements.txt && python3 -m unittest test_renderers -v
 cd ../knowledge && python3 -m unittest test_knowledge -v
 cd ../knowledge && python3 -m unittest test_check_freshness -v      # mocked, no network
@@ -114,6 +131,9 @@ cd ../knowledge && RUN_LIVE_TESTS=1 python3 -m unittest test_check_freshness -v 
 cd ../policy && python3 -m unittest test_engine -v
 cd ../decision && python3 -m unittest test_decision -v
 cd ../detectors/secret && python3 -m unittest test_scanner -v
+cd ../code-review && pip install -r requirements.txt && python3 -m unittest test_scanner -v   # requires real `semgrep` on PATH + network for its registry config
+cd ../auth && python3 -m unittest test_playbook -v
+cd ../auth && python3 -m unittest test_semgrep_detector -v
 ```
 
 Windows: use `python` (not `python3` — not a standard command name on

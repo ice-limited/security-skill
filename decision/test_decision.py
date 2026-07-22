@@ -206,6 +206,29 @@ class DedupFindingsTests(unittest.TestCase):
         result = decision.dedup_findings(findings)
         self.assertEqual(len(result), 2)
 
+    def test_same_rule_id_and_location_from_different_detectors_still_deduped(self) -> None:
+        # Found while testing plan 023, not hypothetical: 023's
+        # playbook.py and semgrep_detector.py deliberately reuse the
+        # SAME ruleId (e.g. "auth.jwt-signature-not-verified") for the
+        # same underlying weakness, distinguished only by
+        # detectorSource, so a report reader sees one consistent name
+        # regardless of which mechanism caught it (see
+        # plans/023-authn-authz-code-review-skill.md). If both ever
+        # report the exact same file/line/byte range, this dedup
+        # collapses them to one, by design — plan 004 scoped
+        # cross-detector fuzzy dedup out of v1, and this is exact-match
+        # only, not fuzzy. Regression-documenting this now that a real,
+        # foreseeable path to an exact-location collision exists (two
+        # detectors sharing a ruleId on purpose), not just a
+        # theoretical one.
+        findings = [
+            {**_finding("f-playbook", rule_id="auth.jwt-signature-not-verified"), "detectorSource": {"name": "auth-playbook", "version": "0.1.0"}},
+            {**_finding("f-semgrep", rule_id="auth.jwt-signature-not-verified"), "detectorSource": {"name": "auth-semgrep-wrapper", "version": "1.170.1"}},
+        ]
+        result = decision.dedup_findings(findings)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["findingId"], "f-playbook", "first occurrence wins, order-dependent")
+
     def test_same_rule_id_different_location_both_kept(self) -> None:
         findings = [_finding("f-1", start=1, end=1), _finding("f-2", start=2, end=2)]
         result = decision.dedup_findings(findings)

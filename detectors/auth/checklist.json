@@ -1,0 +1,210 @@
+{
+  "items": [
+    {
+      "ruleId": "auth.missing-authentication-check",
+      "weaknessClass": "broken-authentication",
+      "title": "Sensitive operation reachable with no authentication check",
+      "guidance": "Look for a handler/endpoint/RPC method that reads, writes, or triggers something sensitive (user data, admin actions, payments, internal services) with no code path that verifies the caller is authenticated at all — no session check, no token validation, no middleware/decorator that would reject an anonymous caller. Distinguish this from auth.missing-authorization-check: this item is about whether the caller is verified to be *anyone known* at all, not whether a known caller is *permitted* to do this specific thing.",
+      "evidenceRequirement": "Cite the specific handler/function and confirm by tracing its actual call path (middleware chain, decorators, framework routing config) that no authentication mechanism runs before it — not just that you didn't see one in the immediate function body. A framework-level default-deny (e.g. global auth middleware applied to all routes) means this is NOT a finding even if the handler itself has no local check.",
+      "languageNotes": {
+        "python": "Check for framework-level defaults: Django REST Framework's DEFAULT_PERMISSION_CLASSES, FastAPI dependency injection (Depends(get_current_user)), Flask's before_request hooks — a missing local @login_required does not mean unauthenticated if one of these covers it globally.",
+        "go": "Check the router's middleware chain (e.g. chi/gin/echo middleware stack) applied to the route group this handler is registered under, not just the handler function itself.",
+        "java": "Check Spring Security's SecurityFilterChain/@PreAuthorize config and servlet filter chain, not just the controller method body.",
+        "php": "Check Laravel route middleware groups (routes/api.php, routes/web.php) and gate/policy registration — a route outside an 'auth' middleware group with no local check is a real finding.",
+        "kotlin": "Check Ktor's authenticate {} route blocks or Spring annotations if using Spring on the JVM — Kotlin alone has no framework-level default.",
+        "swift": "Check Vapor's route groups with .grouped(authMiddleware) or similar — same principle as Go/PHP middleware chains."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-306" },
+        { "standard": "OWASP-ASVS", "id": "V6" },
+        { "standard": "OWASP-API-Top10", "id": "API2:2023" },
+        { "standard": "OWASP-Top10", "id": "A07:2025" }
+      ],
+      "suggestedSeverity": "Critical",
+      "confidenceGuidance": {
+        "defaultMax": 70,
+        "rationale": "Confirming the *absence* of a check across a whole middleware/framework chain requires tracing indirect code paths an agent can miss — cap below a deterministic pattern match's typical confidence even when the evidence looks solid."
+      },
+      "problemTemplate": "The {handler} handler at {file}:{line} performs {sensitiveOperation} with no code path enforcing that the caller is authenticated.",
+      "impactTemplate": "Any unauthenticated caller can invoke {sensitiveOperation}, which normally requires being a known user — potentially exposing or modifying data/functionality meant to be restricted.",
+      "recommendationTemplate": "Add an authentication check (session/token verification) before {handler} executes, or confirm and document that it's covered by a framework-level default-deny middleware if that's actually the case."
+    },
+    {
+      "ruleId": "auth.jwt-signature-not-verified",
+      "weaknessClass": "broken-authentication",
+      "title": "JWT/token accepted without verifying its signature",
+      "guidance": "Look for code that decodes a JWT/token and reads claims from it (user id, role, etc.) without calling the library's verification path — e.g. calling a 'decode' function with verification disabled, explicitly accepting the 'none' algorithm, or verifying against a hardcoded/weak/empty secret instead of the real signing key.",
+      "evidenceRequirement": "Quote the exact decode/verify call and show either (a) a verify=False/similar flag, (b) an algorithm allow-list that includes 'none' or is unset, or (c) the secret/key source, if it's a literal string or an obviously-placeholder value rather than a config-loaded secret.",
+      "languageNotes": {
+        "javascript": "jsonwebtoken's jwt.decode() does NOT verify — only jwt.verify() does. Also check the algorithms option is an explicit allow-list, not omitted.",
+        "python": "PyJWT's jwt.decode() defaults changed across versions — check whether 'verify_signature' or 'algorithms' is explicitly disabled/omitted.",
+        "go": "Check github.com/golang-jwt/jwt's Keyfunc — a Keyfunc that returns a hardcoded key or doesn't check token.Method is the vulnerable pattern.",
+        "java": "Check jjwt or java-jwt's parser builder — a parser built without setSigningKey/verifyWith, or one that trusts the 'alg' header instead of pinning it, is vulnerable."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-287" },
+        { "standard": "OWASP-ASVS", "id": "V6" },
+        { "standard": "OWASP-ASVS", "id": "V9" },
+        { "standard": "OWASP-API-Top10", "id": "API2:2023" }
+      ],
+      "suggestedSeverity": "Critical",
+      "confidenceGuidance": {
+        "defaultMax": 85,
+        "rationale": "This is closer to a pattern match than pure judgment once the specific decode/verify call is found — confidence can be higher than the more judgment-heavy items in this checklist, but still below a deterministic detector's ceiling."
+      },
+      "problemTemplate": "{file}:{line} decodes a JWT/token via {call} without verifying its signature (or accepts a weak/hardcoded key or the 'none' algorithm).",
+      "impactTemplate": "Anyone can forge a token with arbitrary claims (including elevated role/user id) and have it accepted as valid, fully bypassing authentication.",
+      "recommendationTemplate": "Verify the signature on every decode using the library's verifying decode path, pin the expected algorithm(s) explicitly, and load the signing key from a secrets manager rather than a literal in source."
+    },
+    {
+      "ruleId": "auth.jwt-weak-algorithm",
+      "weaknessClass": "broken-authentication",
+      "title": "JWT accepts a weak or 'none' signing algorithm",
+      "guidance": "Distinct from auth.jwt-signature-not-verified (which is about skipping verification entirely): look for a decode/verify call that pins or allows a cryptographically weak algorithm — most commonly explicitly allowing 'none' in an algorithms allow-list, but also includes accepting a deprecated/broken algorithm. Semgrep's own p/jwt pack classifies this as a cryptographic-algorithm weakness (CWE-327), distinct from CWE-287's 'no verification at all' — added as its own checklist item and ruleId rather than folded into auth.jwt-signature-not-verified, since the two are cited under different CWEs by design.",
+      "evidenceRequirement": "Quote the exact algorithms allow-list or algorithm-selection logic showing 'none' or another weak algorithm is accepted.",
+      "languageNotes": {
+        "javascript": "jsonwebtoken: check the `algorithms` option passed to jwt.verify() explicitly excludes 'none' and any other algorithm the application doesn't actually issue tokens with.",
+        "python": "PyJWT: check the `algorithms` argument to jwt.decode() is a specific allow-list, not left unset or including 'none'."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-327" },
+        { "standard": "OWASP-Top10", "id": "A04:2025" },
+        { "standard": "OWASP-ASVS", "id": "V9" }
+      ],
+      "suggestedSeverity": "Critical",
+      "confidenceGuidance": {
+        "defaultMax": 80,
+        "rationale": "Same mechanical, pattern-matchable shape as auth.idor-user-controlled-key (a specific algorithm allow-list either does or doesn't include a weak algorithm) — high confidence ceiling relative to the more judgment-heavy items in this checklist."
+      },
+      "problemTemplate": "{file}:{line} accepts a weak or 'none' signing algorithm ({call}) when verifying JWTs.",
+      "impactTemplate": "Anyone can forge a token that this code will accept as validly signed, by using the weak/'none' algorithm the verifier allows — fully bypassing the signature check regardless of the real signing key.",
+      "recommendationTemplate": "Pin the `algorithms` allow-list to only the specific, strong algorithm(s) this application actually issues tokens with, never 'none' or a deprecated algorithm."
+    },
+    {
+      "ruleId": "auth.session-not-regenerated-after-login",
+      "weaknessClass": "broken-authentication",
+      "title": "Session identifier not regenerated after successful login",
+      "guidance": "Look at the login success path: does it issue a brand-new session identifier/token, or does it keep reusing whatever session ID existed before authentication (e.g. one that was set for the anonymous pre-login visitor)? Reusing the pre-login session ID after authenticating is the vulnerable pattern.",
+      "evidenceRequirement": "Show the login handler and confirm whether it calls the framework's session-regeneration function (or issues a new token) versus writing authenticated state onto the existing session object without rotating its identifier.",
+      "languageNotes": {
+        "php": "Laravel: check for $request->session()->regenerate() after Auth::login(). Its absence right after login is the concrete signal.",
+        "python": "Django: check for request.session.cycle_key() or that login() (django.contrib.auth) is used, which handles this internally — a hand-rolled session-setting bypassing login() is the risk.",
+        "java": "Spring Security: check for session fixation protection config (changeSessionId, the default) not being disabled."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-384" },
+        { "standard": "OWASP-ASVS", "id": "V7" }
+      ],
+      "suggestedSeverity": "Medium",
+      "confidenceGuidance": {
+        "defaultMax": 60,
+        "rationale": "Session lifecycle handling is often implicit in a framework's login() helper — an agent can't always be certain regeneration isn't happening somewhere it didn't trace; keep this the lowest-confidence default in the checklist."
+      },
+      "problemTemplate": "The login handler at {file}:{line} does not regenerate the session identifier after successful authentication.",
+      "impactTemplate": "An attacker who can set or predict a victim's pre-login session ID (e.g. via a shared link or subdomain cookie) can hijack the victim's session once they log in, without ever learning their credentials.",
+      "recommendationTemplate": "Regenerate the session identifier (or issue a new token) immediately after successful authentication, before any authenticated state is attached to it."
+    },
+    {
+      "ruleId": "auth.missing-authorization-check",
+      "weaknessClass": "broken-authorization",
+      "title": "Sensitive action performed with no authorization check at all",
+      "guidance": "For an *authenticated* caller, look for a handler that performs a sensitive action (delete, modify, view another user's data, admin action) with genuinely no role/permission/ownership check anywhere in its call path — not merely a check that's present but wrong (see auth.idor-user-controlled-key and auth.client-controlled-privilege-field for those narrower, more specific patterns).",
+      "evidenceRequirement": "Trace the full call path (including any shared service/repository layer the handler delegates to) and confirm no authorization check exists anywhere in it, not just that the handler function itself lacks one.",
+      "languageNotes": {
+        "python": "Django REST Framework: check the viewset/view's permission_classes — DjangoModelPermissions or a custom class actually enforcing object-level rules, vs. the default AllowAny or IsAuthenticated (which only proves auth, not authz).",
+        "go": "Look for a shared 'can(user, action, resource)'-style helper used elsewhere in the codebase — its absence on this handler, when present on sibling handlers, is a strong signal.",
+        "java": "Check for @PreAuthorize/@Secured annotations or manual SecurityContext role checks on the controller method."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-862" },
+        { "standard": "OWASP-ASVS", "id": "V8" },
+        { "standard": "OWASP-API-Top10", "id": "API5:2023" },
+        { "standard": "OWASP-Top10", "id": "A01:2025" }
+      ],
+      "suggestedSeverity": "Critical",
+      "confidenceGuidance": {
+        "defaultMax": 65,
+        "rationale": "Proving a negative (no check exists anywhere in the call path) is the hardest evidentiary bar in this checklist — keep confidence conservative even when the trace looks thorough."
+      },
+      "problemTemplate": "{handler} at {file}:{line} performs {sensitiveOperation} for an authenticated caller with no authorization check anywhere in its call path.",
+      "impactTemplate": "Any authenticated user, regardless of role or ownership, can perform {sensitiveOperation} — likely intended to be restricted to specific users or roles.",
+      "recommendationTemplate": "Add an explicit authorization check (role and/or resource-ownership) before {handler} executes the sensitive action, using the same authorization mechanism already used elsewhere in this codebase for consistency."
+    },
+    {
+      "ruleId": "auth.idor-user-controlled-key",
+      "weaknessClass": "broken-authorization",
+      "title": "Resource accessed by a client-supplied identifier with no ownership check",
+      "guidance": "Look for a handler that takes an identifier from the request (URL path/query param, request body field) and uses it directly to fetch/modify/delete a specific record, without checking that the record belongs to (or is otherwise permitted for) the authenticated caller. Classic textbook IDOR/BOLA — the check that's missing is specifically 'does this ID belong to this caller', not authorization in general.",
+      "evidenceRequirement": "Show the exact query/lookup call using the client-supplied identifier, and confirm there is no accompanying WHERE/filter clause (or equivalent ownership check) scoping the lookup to the current user/tenant.",
+      "languageNotes": {
+        "python": "Django ORM: Model.objects.get(id=request_id) with no owner=request.user filter is the vulnerable shape; Model.objects.get(id=request_id, owner=request.user) is the fix shape.",
+        "javascript": "Check ORM calls like findById/findOne({_id: req.params.id}) with no accompanying userId/tenantId filter in the query.",
+        "go": "Check the SQL/ORM query string or builder chain for a WHERE clause scoping to the authenticated user's id/tenant, alongside the client-supplied id."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-639" },
+        { "standard": "OWASP-ASVS", "id": "V8" },
+        { "standard": "OWASP-API-Top10", "id": "API1:2023" },
+        { "standard": "OWASP-Top10", "id": "A01:2025" }
+      ],
+      "suggestedSeverity": "High",
+      "confidenceGuidance": {
+        "defaultMax": 80,
+        "rationale": "This item has the narrowest, most mechanical evidence requirement in the checklist (a specific query missing a specific filter) — closer to what a deterministic detector could verify, so it gets the highest default confidence ceiling here."
+      },
+      "problemTemplate": "{handler} at {file}:{line} looks up {resourceType} using a client-supplied identifier with no check that it belongs to the authenticated caller.",
+      "impactTemplate": "Any authenticated user can read or modify another user's {resourceType} simply by changing the identifier in the request, without any authorization bypass beyond guessing/enumerating IDs.",
+      "recommendationTemplate": "Scope the lookup to the authenticated caller (e.g. add an owner/tenant filter to the query) rather than trusting the client-supplied identifier alone."
+    },
+    {
+      "ruleId": "auth.client-controlled-privilege-field",
+      "weaknessClass": "broken-authorization",
+      "title": "Authorization decision based on a client-controlled field",
+      "guidance": "Look for authorization logic that reads a role/permission/flag (e.g. isAdmin, role, accountType) directly from client-controlled input (request body, header, cookie, query param) rather than from a server-side-trusted source (session, database record, verified token claim). Also covers mass-assignment-shaped bugs where a privilege field is accepted as part of a generic 'update' payload.",
+      "evidenceRequirement": "Show the exact field read and its source — confirm it comes from request input (not a verified token claim or a database lookup keyed by the authenticated user's own id) before it's used in an authorization decision or persisted as a privilege change.",
+      "languageNotes": {
+        "javascript": "Check for req.body.role, req.body.isAdmin, or similar being read directly into an authorization check or passed straight into an ORM update/create call without an explicit allow-list of updatable fields.",
+        "python": "Django REST Framework serializers: check whether 'role'/'is_staff'/'is_superuser'-type fields are in the serializer's writable fields rather than read_only_fields.",
+        "php": "Laravel: check for $request->all() or unguarded mass-assignment (missing $fillable/$guarded restriction) reaching a privilege field."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-863" },
+        { "standard": "OWASP-API-Top10", "id": "API3:2023" },
+        { "standard": "OWASP-Top10", "id": "A01:2025" }
+      ],
+      "suggestedSeverity": "Critical",
+      "confidenceGuidance": {
+        "defaultMax": 75,
+        "rationale": "Tracing a field's source back to client input vs. a trusted store is fairly mechanical once found, but confirming there's no intervening validation/allow-list requires judgment — kept below auth.idor-user-controlled-key's ceiling."
+      },
+      "problemTemplate": "{handler} at {file}:{line} uses the client-supplied {field} field directly in an authorization decision (or an unguarded mass-assignment update) instead of a server-side-trusted source.",
+      "impactTemplate": "Any caller can set {field} in their own request to grant themselves elevated privileges (e.g. become an admin) without any legitimate privilege-granting process.",
+      "recommendationTemplate": "Read {field} only from a server-side-trusted source (verified token claim, database record, or an explicit allow-list of client-updatable fields that excludes privilege fields)."
+    },
+    {
+      "ruleId": "auth.function-level-authz-missing",
+      "weaknessClass": "broken-authorization",
+      "title": "Privileged function/endpoint reachable by an insufficiently-privileged authenticated user",
+      "guidance": "Distinct from auth.missing-authorization-check's general case: look specifically for admin-only or otherwise privileged functions/endpoints (bulk operations, config changes, other-users'-data management) that check the caller is authenticated but never check the caller's specific role/permission level before executing.",
+      "evidenceRequirement": "Identify the specific privileged function/endpoint, confirm an authentication check exists (so this isn't auth.missing-authentication-check instead), and confirm no role/permission check gates it specifically — e.g. by comparing against a sibling admin endpoint in the same codebase that does have the check, if one exists.",
+      "languageNotes": {
+        "go": "Check the route registration for an admin-only middleware/group that this specific route was or wasn't placed under.",
+        "java": "Check for @RolesAllowed/@PreAuthorize(\"hasRole('ADMIN')\") on sibling admin endpoints vs. its absence here.",
+        "python": "Check for an is_staff/is_superuser check or a custom permission class used on sibling admin views vs. its absence here."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-862" },
+        { "standard": "OWASP-API-Top10", "id": "API5:2023" },
+        { "standard": "OWASP-Top10", "id": "A01:2025" }
+      ],
+      "suggestedSeverity": "Critical",
+      "confidenceGuidance": {
+        "defaultMax": 65,
+        "rationale": "Same 'proving a negative' difficulty as auth.missing-authorization-check, narrowed slightly by having a sibling endpoint to compare against when one exists — still capped conservatively."
+      },
+      "problemTemplate": "{handler} at {file}:{line} is a privileged/admin-only operation that checks authentication but not the caller's role or permission level.",
+      "impactTemplate": "Any authenticated user, regardless of role, can perform {sensitiveOperation}, which is meant to be restricted to privileged users (e.g. admins).",
+      "recommendationTemplate": "Add an explicit role/permission check gating {handler}, matching the pattern used by other privileged endpoints in this codebase."
+    }
+  ]
+}
