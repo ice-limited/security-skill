@@ -50,9 +50,10 @@ policy/            Severity -> action policy engine, default + per-repo
 decision/          Exact-duplicate dedup + exception-based suppression,
                    sits between detectors and policy/. Implemented — see
                    README.md in this directory.
-adapters/          Per-tool entry points (SKILL.md for Claude Code, AGENTS.md
-                   for Codex/OpenCode/Cursor/etc.) — reserved for Phase 3
-                   (plans 017-019), not yet built or scaffolded.
+adapters/          Per-tool entry points. claude-code/ (plan 017) done —
+                   see README.md in that directory. AGENTS.md-convention
+                   tools (018) and Antigravity/Grok Build (019) not yet
+                   built.
 detectors/         Detection rules per sub-skill (code review, dependency,
                    iac, kubernetes, docker, api, secret, supply-chain) —
                    one subdirectory per sub-skill, each following the
