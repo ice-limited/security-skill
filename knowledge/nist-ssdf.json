@@ -1,5 +1,5 @@
 {
-  "_note": "NIST SP 800-218 (Secure Software Development Framework). Top-level practice groups only — individual practice IDs (e.g. PW.4.4) are added as sub-skills need to cite them.",
+  "_note": "NIST SP 800-218 (Secure Software Development Framework). Top-level practice groups plus individual practice IDs added as sub-skills need to cite them — PS.2/PS.2.1/PS.3.2 added at plan 014's implementation (2026-07-22), fetched directly from NIST SSDF sources, not guessed, since no CWE cleanly covers 'missing signing'/'missing SBOM' as a weakness pattern.",
   "PO": {
     "title": "Prepare the Organization",
     "url": "https://csrc.nist.gov/Projects/ssdf"
@@ -8,8 +8,24 @@
     "title": "Protect the Software",
     "url": "https://csrc.nist.gov/Projects/ssdf"
   },
+  "PS.2": {
+    "title": "Provide a Mechanism for Verifying Software Release Integrity",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  },
+  "PS.2.1": {
+    "title": "Make integrity verification information available to software purchasers and consumers",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  },
+  "PS.3.2": {
+    "title": "Collect, maintain, and share provenance data for all components and other dependencies of each software release (e.g., in a software bill of materials [SBOM])",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  },
   "PW": {
     "title": "Produce Well-Secured Software",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  },
+  "PW.7": {
+    "title": "Review and/or Analyze Human-Readable Code to Identify Vulnerabilities and Verify Compliance with Security Requirements",
     "url": "https://csrc.nist.gov/Projects/ssdf"
   },
   "RV": {
