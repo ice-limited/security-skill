@@ -13,7 +13,8 @@
   },
   "A03:2025": {
     "title": "Software Supply Chain Failures",
-    "url": "https://owasp.org/Top10/2025/A03_2025-Software_Supply_Chain_Failures/"
+    "url": "https://owasp.org/Top10/2025/A03_2025-Software_Supply_Chain_Failures/",
+    "relatedCwe": ["CWE-1104", "CWE-1395"]
   },
   "A04:2025": {
     "title": "Cryptographic Failures",

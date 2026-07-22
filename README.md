@@ -63,6 +63,12 @@ detectors/         Detection rules per sub-skill (code review, dependency,
                      wrapper around the Semgrep CLI (subprocess), not a
                      from-scratch engine. Implemented — see README.md
                      in this directory.
+  dependency/        CVEs, known-malicious packages, license
+                     compliance, deprecated packages (plan 008) — a
+                     thin wrapper around the osv-scanner CLI
+                     (subprocess) covering npm/PyPI/Go/Maven/Packagist/
+                     Pub/SwiftURL in one tool. Implemented — see
+                     README.md in this directory.
   auth/              AuthN/AuthZ code review (plan 023) — hybrid:
                      playbook.py (a checklist the invoking AI agent
                      reasons over directly — the primary mechanism,
@@ -132,6 +138,7 @@ cd ../policy && python3 -m unittest test_engine -v
 cd ../decision && python3 -m unittest test_decision -v
 cd ../detectors/secret && python3 -m unittest test_scanner -v
 cd ../code-review && pip install -r requirements.txt && python3 -m unittest test_scanner -v   # requires real `semgrep` on PATH + network for its registry config
+cd ../dependency && python3 -m unittest test_scanner -v   # requires real `osv-scanner` on PATH + network to query OSV
 cd ../auth && python3 -m unittest test_playbook -v
 cd ../auth && python3 -m unittest test_semgrep_detector -v
 ```
