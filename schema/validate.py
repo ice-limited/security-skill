@@ -1,8 +1,11 @@
-"""Validate a ScanReport JSON file against scan-report.schema.json, or a
+"""Validate a ScanReport JSON file against scan-report.schema.json, a
 Remediation JSON file against remediation.schema.json (plan 015 —
 remediation.schema.json's own `patch.location` field `$ref`s
 finding.schema.json's location def, the same cross-file `$ref` need
-`validate_report` already resolves for ScanReport's `findings[]`).
+`validate_report` already resolves for ScanReport's `findings[]`), or an
+Integration JSON file against integration.schema.json (plan 016 —
+self-contained, no cross-file `$ref`s, but exposed here for the same
+reason: one validate.py per schema-holding directory, not scattered).
 
 Usage: python3 validate.py path/to/report.json
 Requires the `jsonschema` package (see requirements.txt).
@@ -47,6 +50,11 @@ def validate_remediation(remediation: dict) -> list[str]:
     finding_schema = _load("finding.schema.json")
     remediation_schema = _load("remediation.schema.json")
     return validate_against_schema(remediation_schema, remediation, registry=_finding_registry(finding_schema))
+
+
+def validate_integration(integration: dict) -> list[str]:
+    integration_schema = _load("integration.schema.json")
+    return validate_against_schema(integration_schema, integration)
 
 
 if __name__ == "__main__":

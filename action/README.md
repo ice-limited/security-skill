@@ -9,15 +9,20 @@ an impact-of-the-fix narrative, and pull-request draft content. See
 `meetings/2026-07-23-1000-plan-015-kickoff.md` in the
 security-skill-workspace repo for design rationale.
 
+This directory also holds `integrations.py` (plan 016) — see its own
+section below.
+
 ## Pure data generator — no exception to this project's own shape
 
 Every prior plan (001–014) is pure analysis with zero side effects.
 015 stays that way: **this module never writes to the target repo's
 filesystem, never runs `git`/`gh`, and never calls any external API.**
 `patch`/`pullRequestDraft` are data describing a proposed change — the
-invoking agent applies a patch itself, and plan 016 is the one that
-actually calls a GitHub/GitLab API to open a PR from this module's
-`pullRequestDraft` content.
+invoking agent applies a patch itself.
+
+**Revised at 016's kickoff**: 016 does *not* actually call a
+GitHub/GitLab/Jira/Slack API either — see `integrations.py`'s own
+section below for why.
 
 ## `remediation.py` — the core builder
 
@@ -101,8 +106,9 @@ python3 remediation.py path/to/finding.json --source-file path/to/scanned_file.p
 
 - Applying a patch to disk, running `git`, or calling any API —
   confirmed at kickoff, the invoking agent's job.
-- Actually opening a pull request from `pullRequestDraft` — plan 016's
-  job.
+- Actually opening a pull request from `pullRequestDraft`, or
+  delivering a ticket/notification payload to a real system — see
+  `integrations.py` below; not even that module does this.
 - Sandboxed patch validation (apply + run the target repo's own
   build/lint/test) before tier-1 eligibility — confirmed out of scope
   for v1 at kickoff; no sandbox infrastructure exists anywhere in this
@@ -110,11 +116,60 @@ python3 remediation.py path/to/finding.json --source-file path/to/scanned_file.p
 - Real computed patches for sub-skills beyond `secret.*` — a future
   plan's ruleId-by-ruleId work, not promised here.
 
+## `integrations.py` — gate verdict, ticket, and notification payloads (plan 016)
+
+Turns a Policy Engine verdict (`policy/engine.py`'s
+`evaluate()`/`evaluate_report()`, over a `ScanReport`) into
+`Integration` records (`schema/integration.schema.json`): one
+`gate-verdict` for the whole report, one `ticket` per finding whose
+policy action is `create-ticket`, one `notification` per finding whose
+action is `notify`. See `plans/016-action-layer-integrations-gate.md`
+and `meetings/2026-07-23-1100-plan-016-kickoff.md` for design
+rationale.
+
+**Also a pure data generator — the ticketing/chat vendor question
+resolved by staying generic.** Which ticketing system(s) and chat
+channel(s) cpmatch actually uses was still unspecified as of this
+plan's kickoff (an open question carried since the roadmap kickoff,
+flagged again by 013/014/015 without ever being answered). Rather than
+guess a vendor, this module produces vendor-agnostic, generic-webhook-
+shaped payloads — no Jira/Slack/GitHub-specific field names anywhere.
+Real delivery (POSTing a payload to an actual webhook URL, or the
+`gh pr create` call for a `pullRequestDraft`) is a future plan's job,
+or the invoking agent's, once a real target system is chosen — this
+module never performs network I/O, proven by an `ast`-based test, not
+just asserted in a docstring.
+
+**No cascading actions.** `policy/engine.py` assigns exactly one
+action per finding. `create-ticket` gets a ticket record, `notify` gets
+a notification record; `block-merge`/`require-review`/`none` findings
+are folded into the gate verdict only — no separate ticket/notification
+record is invented for them. Whether cascading (e.g. a blocked finding
+*also* triggering a notification) is wanted is a real, separate
+question for a future revision of the policy engine or this module,
+not decided here.
+
+```python
+import integrations
+from integrations import build_integrations
+
+records = build_integrations(report, verdict)  # verdict = policy.engine's evaluate_report() output
+errors = validate_integration(records[0])  # schema/validate.py
+```
+
+```
+python3 integrations.py path/to/scan-report.json [--repo-root path/to/repo]
+```
+Exits non-zero iff the policy verdict's `aggregateAction` is
+`block-merge` — a CI step can gate on this exit code directly, with no
+additional logic of its own.
+
 ## Cross-platform
 
 Every file read/write here specifies `encoding="utf-8"` explicitly.
 Verify with (from inside this directory):
 ```
 LC_ALL=en_US.US-ASCII LANG=en_US.US-ASCII python3 -m unittest test_remediation -v
+LC_ALL=en_US.US-ASCII LANG=en_US.US-ASCII python3 -m unittest test_integrations -v
 ```
 (macOS/Linux; see the top-level `security-skill/README.md`.)

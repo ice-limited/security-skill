@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cpmatch:security-skill:schema:integration:1.0.0",
+  "title": "Integration",
+  "description": "A gate verdict, ticket payload, or notification payload produced from a Policy Engine verdict (policy/engine.py's evaluate()/evaluate_report()) over a ScanReport. See plans/016-action-layer-integrations-gate.md and meetings/2026-07-23-1100-plan-016-kickoff.md in the security-skill-workspace repo. Pure data, vendor-agnostic (generic-webhook decision at kickoff): no field here implies a webhook was actually called, a ticket was actually created, or a message was actually sent — that delivery is a future plan's job once a real target system is chosen.",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/gateVerdict" },
+    { "$ref": "#/$defs/ticket" },
+    { "$ref": "#/$defs/notification" }
+  ],
+  "$defs": {
+    "gateVerdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "aggregateAction", "shouldBlockMerge", "findingCount", "summary"],
+      "properties": {
+        "kind": { "const": "gate-verdict" },
+        "aggregateAction": {
+          "type": "string",
+          "enum": ["block-merge", "require-review", "create-ticket", "notify", "none"],
+          "description": "Copied verbatim from policy/engine.py's evaluate()'s aggregateAction — this schema never re-derives or re-decides it."
+        },
+        "shouldBlockMerge": {
+          "type": "boolean",
+          "description": "True iff aggregateAction == 'block-merge'. A CI step gates on this (or on this module's own CLI exit code, which mirrors it 1:1) — not on aggregateAction's string value directly, so a future addition to ACTION_ORDER can't silently change what blocks a merge without this field's own definition changing too."
+        },
+        "findingCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of non-suppressed findings the verdict was computed over (len of evaluate()'s perFinding)."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable one-line summary, e.g. 'block-merge: 2 Critical finding(s) require action before merge.'"
+        }
+      }
+    },
+    "ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "findingId", "title", "description", "severity", "labels"],
+      "properties": {
+        "kind": { "const": "ticket" },
+        "findingId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The finding.schema.json Finding this ticket is for."
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Markdown body, including the finding's standard references (CWE/OWASP/etc.) so a ticket lands with the same citations a human reviewer would want (per วิน's request at kickoff)."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["Critical", "High", "Medium", "Low", "Info"]
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Vendor-agnostic label strings (e.g. 'security', 'severity:medium', subSkill name) — a future per-vendor adapter maps these to whatever label/tag mechanism that system actually has."
+        }
+      }
+    },
+    "notification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "findingId", "text", "severity"],
+      "properties": {
+        "kind": { "const": "notification" },
+        "findingId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The finding.schema.json Finding this notification is for."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short plain-text message body, suitable as-is for a generic chat webhook's message field."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["Critical", "High", "Medium", "Low", "Info"]
+        }
+      }
+    }
+  }
+}
