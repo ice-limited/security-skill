@@ -93,7 +93,7 @@ class CrossRepoConsistencyTests(unittest.TestCase):
     else enforces that the two don't quietly drift apart."""
 
     def test_schema_standard_enum_matches_knowledge_base(self) -> None:
-        finding_schema = json.loads((SCHEMA_DIR / "finding.schema.json").read_text())
+        finding_schema = json.loads((SCHEMA_DIR / "finding.schema.json").read_text(encoding="utf-8"))
         schema_enum = set(
             finding_schema["$defs"]["standardReference"]["properties"]["standard"]["enum"]
         )
@@ -123,14 +123,14 @@ class ReferentialIntegrityTests(unittest.TestCase):
 
 class ReferenceValidationTests(unittest.TestCase):
     def test_sample_report_references_all_resolve(self) -> None:
-        report = json.loads(SAMPLE_REPORT.read_text())
+        report = json.loads(SAMPLE_REPORT.read_text(encoding="utf-8"))
         problems = find_unknown_references(report)
         self.assertEqual(problems, [])
 
     def test_stale_2021_edition_reference_is_flagged(self) -> None:
         # Regression guard for exactly the bug plan 002 found and fixed in
         # plan 001's fixture: an old-edition ID must NOT silently pass.
-        report = json.loads(SAMPLE_REPORT.read_text())
+        report = json.loads(SAMPLE_REPORT.read_text(encoding="utf-8"))
         report["findings"][0]["references"].append(
             {"standard": "OWASP-Top10", "id": "A03:2021"}
         )
@@ -139,7 +139,7 @@ class ReferenceValidationTests(unittest.TestCase):
         self.assertIn("A03:2021", problems[0])
 
     def test_typo_d_cwe_id_is_flagged(self) -> None:
-        report = json.loads(SAMPLE_REPORT.read_text())
+        report = json.loads(SAMPLE_REPORT.read_text(encoding="utf-8"))
         report["findings"][0]["references"].append({"standard": "CWE", "id": "CWE-89999"})
         problems = find_unknown_references(report)
         self.assertEqual(len(problems), 1)
@@ -152,6 +152,52 @@ class ReferenceValidationTests(unittest.TestCase):
     def test_finding_with_no_references_is_fine(self) -> None:
         report = {"findings": [{"findingId": "f-x", "references": []}]}
         self.assertEqual(find_unknown_references(report), [])
+
+
+class CrossPlatformEncodingTests(unittest.TestCase):
+    """Regression guard for plan 022 — see schema/test_renderers.py's
+    class of the same name for the full rationale. This directory's own
+    knowledge/*.json files contain non-ASCII characters (em dashes) in
+    their `_note` fields."""
+
+    def test_knowledge_files_contain_non_ascii_and_still_read_cleanly(self) -> None:
+        found_non_ascii = False
+        for std in standards.known_standards():
+            content = (KNOWLEDGE_DIR / standards._STANDARD_FILES[std][0]).read_text(encoding="utf-8")
+            if any(ord(ch) > 127 for ch in content):
+                found_non_ascii = True
+        self.assertTrue(found_non_ascii, "expected at least one knowledge/*.json to contain non-ASCII text")
+
+    def test_round_trip_non_ascii_content_with_explicit_utf8(self) -> None:
+        import tempfile
+
+        text = "em dash — and middle dot · round-trip"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "roundtrip.txt"
+            path.write_text(text, encoding="utf-8")
+            self.assertEqual(path.read_text(encoding="utf-8"), text)
+
+
+class SourceEncodingAuditTests(unittest.TestCase):
+    """Static-analysis regression guard — see schema/test_renderers.py's
+    class of the same name. Scans every .py file in this directory."""
+
+    def test_no_read_or_write_text_call_omits_encoding(self) -> None:
+        import ast
+
+        violations = []
+        for path in sorted(KNOWLEDGE_DIR.glob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in ("read_text", "write_text")
+                ):
+                    kwarg_names = {kw.arg for kw in node.keywords}
+                    if "encoding" not in kwarg_names:
+                        violations.append(f"{path.name}:{node.lineno} .{node.func.attr}() missing encoding=")
+        self.assertEqual(violations, [])
 
 
 if __name__ == "__main__":

@@ -53,7 +53,7 @@ def load(standard: str) -> dict[str, dict]:
         raise UnknownStandardError(standard)
     if standard not in _cache:
         filename, _ = _STANDARD_FILES[standard]
-        raw = json.loads((KNOWLEDGE_DIR / filename).read_text())
+        raw = json.loads((KNOWLEDGE_DIR / filename).read_text(encoding="utf-8"))
         _cache[standard] = {k: v for k, v in raw.items() if not k.startswith("_")}
     return _cache[standard]
 

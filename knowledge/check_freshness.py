@@ -110,7 +110,7 @@ def _normalize(kind: str, value: str) -> tuple[int, ...]:
 
 
 def get_recorded_edition(standard: str) -> str:
-    data = json.loads((KNOWLEDGE_DIR / STANDARDS[standard]["file"]).read_text())
+    data = json.loads((KNOWLEDGE_DIR / STANDARDS[standard]["file"]).read_text(encoding="utf-8"))
     return data["_edition"]
 
 
@@ -197,4 +197,9 @@ def main(results: list[dict] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # Reconfigured here, not inside main(), so tests that redirect
+    # stdout/stderr to an io.StringIO (which has no .reconfigure()) can
+    # still call main() directly. See plans/022-cross-platform-compatibility.md.
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     sys.exit(main())

@@ -148,7 +148,7 @@ class ConfigConsistencyTests(unittest.TestCase):
 
     def test_get_recorded_edition_reads_the_right_file_for_each_standard(self) -> None:
         for standard, config in cf.STANDARDS.items():
-            expected = json.loads((cf.KNOWLEDGE_DIR / config["file"]).read_text())["_edition"]
+            expected = json.loads((cf.KNOWLEDGE_DIR / config["file"]).read_text(encoding="utf-8"))["_edition"]
             self.assertEqual(cf.get_recorded_edition(standard), expected)
 
     def test_every_configured_standard_is_a_valid_finding_schema_enum_value(self) -> None:
@@ -156,7 +156,7 @@ class ConfigConsistencyTests(unittest.TestCase):
         # here that isn't a real `standard` enum value in
         # finding.schema.json would be a silent typo.
         finding_schema = json.loads(
-            (cf.KNOWLEDGE_DIR.parent / "schema" / "finding.schema.json").read_text()
+            (cf.KNOWLEDGE_DIR.parent / "schema" / "finding.schema.json").read_text(encoding="utf-8")
         )
         schema_enum = set(
             finding_schema["$defs"]["standardReference"]["properties"]["standard"]["enum"]

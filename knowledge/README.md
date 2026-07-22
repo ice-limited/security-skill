@@ -65,6 +65,17 @@ files itself. See `plans/021-knowledge-base-freshness-checker.md` in the
 security-skill-workspace repo. On-demand only for now; not wired into
 CI/scheduling yet.
 
+## Cross-platform
+
+Every file read here specifies `encoding="utf-8"` explicitly, and
+`check_freshness.py`/`validate_references.py` reconfigure stdout/stderr
+to UTF-8 (plan 022) — the JSON data in this directory contains non-ASCII
+characters (em dashes) that would otherwise crash under a non-UTF-8
+locale default (common on Windows). Verify with:
+`LC_ALL=en_US.US-ASCII LANG=en_US.US-ASCII python3 -m unittest test_knowledge -v`
+(macOS/Linux; see the top-level `security-skill/README.md` for why this
+is a meaningful proxy for Windows and not just theater).
+
 ## Growing this data
 
 Add entries as sub-skill detectors (plans 006–014) need to cite them —

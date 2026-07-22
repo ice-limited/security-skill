@@ -114,5 +114,10 @@ def render_html(report: dict) -> str:
 
 
 if __name__ == "__main__":
+    # See plans/022-cross-platform-compatibility.md — explicit, not
+    # locale-dependent (Windows' non-UTF-8 default would otherwise crash
+    # on the non-ASCII characters this codebase's data contains).
+    sys.stdin.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     data = json.load(sys.stdin)
     sys.stdout.write(render_html(data))

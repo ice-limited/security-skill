@@ -57,7 +57,7 @@ def _minimal_report(findings: list[dict]) -> dict:
 
 class RendererGoldenFileTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.report = json.loads((TESTDATA / "sample-report.json").read_text())
+        self.report = json.loads((TESTDATA / "sample-report.json").read_text(encoding="utf-8"))
 
     def test_sample_report_is_schema_valid(self) -> None:
         errors = validate_report(self.report)
@@ -65,12 +65,12 @@ class RendererGoldenFileTests(unittest.TestCase):
 
     def test_markdown_matches_golden_file(self) -> None:
         actual = render_markdown(self.report)
-        expected = (TESTDATA / "sample-report.md").read_text()
+        expected = (TESTDATA / "sample-report.md").read_text(encoding="utf-8")
         self.assertEqual(actual, expected)
 
     def test_html_matches_golden_file(self) -> None:
         actual = render_html(self.report)
-        expected = (TESTDATA / "sample-report.html").read_text()
+        expected = (TESTDATA / "sample-report.html").read_text(encoding="utf-8")
         self.assertEqual(actual, expected)
 
     def test_suppressed_finding_is_rendered_not_dropped(self) -> None:
@@ -99,11 +99,11 @@ class SchemaSelfCheckTests(unittest.TestCase):
     """The schema files themselves must be valid JSON Schema documents."""
 
     def test_finding_schema_is_valid_json_schema(self) -> None:
-        schema = json.loads((SCHEMA_DIR / "finding.schema.json").read_text())
+        schema = json.loads((SCHEMA_DIR / "finding.schema.json").read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
 
     def test_scan_report_schema_is_valid_json_schema(self) -> None:
-        schema = json.loads((SCHEMA_DIR / "scan-report.schema.json").read_text())
+        schema = json.loads((SCHEMA_DIR / "scan-report.schema.json").read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
 
 
@@ -172,14 +172,21 @@ class CliInvocationTests(unittest.TestCase):
     """The renderers must also work as `python3 render_x.py < report.json`."""
 
     def setUp(self) -> None:
-        self.report_json = (TESTDATA / "sample-report.json").read_text()
+        self.report_json = (TESTDATA / "sample-report.json").read_text(encoding="utf-8")
 
     def _run(self, script: str) -> str:
+        # encoding="utf-8" here is load-bearing, not decorative: without
+        # it, subprocess.run() encodes `input` using the OS locale
+        # default to build the child's stdin pipe — a 4th encoding
+        # failure point plan 022 found only by actually running this
+        # suite under a forced non-UTF-8 locale, distinct from the
+        # child script's own sys.stdin.reconfigure().
         result = subprocess.run(
             [sys.executable, script],
             input=self.report_json,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             cwd=SCHEMA_DIR,
             check=True,
         )
@@ -187,11 +194,73 @@ class CliInvocationTests(unittest.TestCase):
 
     def test_render_markdown_cli(self) -> None:
         stdout = self._run("render_markdown.py")
-        self.assertEqual(stdout, (TESTDATA / "sample-report.md").read_text())
+        self.assertEqual(stdout, (TESTDATA / "sample-report.md").read_text(encoding="utf-8"))
 
     def test_render_html_cli(self) -> None:
         stdout = self._run("render_html.py")
-        self.assertEqual(stdout, (TESTDATA / "sample-report.html").read_text())
+        self.assertEqual(stdout, (TESTDATA / "sample-report.html").read_text(encoding="utf-8"))
+
+
+class CrossPlatformEncodingTests(unittest.TestCase):
+    """Regression guard for plan 022: this codebase's own data contains
+    non-ASCII characters (em dashes), and every read/write must say so
+    explicitly rather than trust the OS locale default — commonly UTF-8
+    on macOS/Linux, commonly something else (e.g. cp1252) on Windows.
+    See security-skill/README.md's "Cross-platform encoding
+    verification" section for how this was empirically confirmed (52
+    real test failures under a forced non-UTF-8 locale, before the fix)."""
+
+    def test_schema_files_contain_non_ascii_and_still_read_cleanly(self) -> None:
+        for name in ("finding.schema.json", "scan-report.schema.json"):
+            content = (SCHEMA_DIR / name).read_text(encoding="utf-8")
+            self.assertIn("—", content, f"{name} was expected to contain an em dash")
+
+    def test_round_trip_non_ascii_content_with_explicit_utf8(self) -> None:
+        import tempfile
+
+        text = "em dash — and middle dot · round-trip"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "roundtrip.txt"
+            path.write_text(text, encoding="utf-8")
+            self.assertEqual(path.read_text(encoding="utf-8"), text)
+
+    def test_same_content_would_fail_under_ascii_without_explicit_encoding(self) -> None:
+        # Documents *why* the encoding="utf-8" kwarg is load-bearing, not
+        # decorative: proves the exact failure mode plan 022 fixed.
+        import tempfile
+
+        text = "em dash — round-trip"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "roundtrip.txt"
+            path.write_text(text, encoding="utf-8")
+            with self.assertRaises(UnicodeDecodeError):
+                path.read_text(encoding="ascii")
+
+
+class SourceEncodingAuditTests(unittest.TestCase):
+    """Static-analysis regression guard: rather than hardcode the list of
+    call sites fixed in plan 022 (which stops protecting the codebase the
+    moment someone adds a new one), parse every .py file in this
+    directory and fail if *any* .read_text()/.write_text() call omits
+    `encoding=`. Catches future regressions this suite's other tests
+    can't, since they can only exercise call sites that already exist."""
+
+    def test_no_read_or_write_text_call_omits_encoding(self) -> None:
+        import ast
+
+        violations = []
+        for path in sorted(SCHEMA_DIR.glob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in ("read_text", "write_text")
+                ):
+                    kwarg_names = {kw.arg for kw in node.keywords}
+                    if "encoding" not in kwarg_names:
+                        violations.append(f"{path.name}:{node.lineno} .{node.func.attr}() missing encoding=")
+        self.assertEqual(violations, [])
 
 
 if __name__ == "__main__":

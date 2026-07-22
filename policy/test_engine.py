@@ -39,18 +39,18 @@ def _finding(finding_id: str, severity: str, suppressed: bool = False) -> dict:
 
 class SchemaSelfCheckTests(unittest.TestCase):
     def test_policy_schema_is_valid_json_schema(self) -> None:
-        schema = json.loads((POLICY_DIR / "policy.schema.json").read_text())
+        schema = json.loads((POLICY_DIR / "policy.schema.json").read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
 
     def test_default_policy_validates(self) -> None:
-        default = json.loads((POLICY_DIR / "default-policy.json").read_text())
+        default = json.loads((POLICY_DIR / "default-policy.json").read_text(encoding="utf-8"))
         self.assertEqual(validate_policy(default), [])
 
     def test_default_policy_matches_spec(self) -> None:
         # CONTEXT.md §9: Critical->block merge, High->require review,
         # Medium->create ticket, Low->notify. Info->none is this repo's
         # own addition (no "do nothing" case named in the spec).
-        default = json.loads((POLICY_DIR / "default-policy.json").read_text())
+        default = json.loads((POLICY_DIR / "default-policy.json").read_text(encoding="utf-8"))
         self.assertEqual(
             default["actions"],
             {
@@ -184,7 +184,7 @@ class ResolvePolicyTests(unittest.TestCase):
                     "Info": "none",
                 },
             }
-            (override_dir / "policy.json").write_text(json.dumps(custom))
+            (override_dir / "policy.json").write_text(json.dumps(custom), encoding="utf-8")
 
             resolved = engine.resolve_policy(tmp)
             self.assertEqual(resolved, custom)
@@ -195,7 +195,7 @@ class ResolvePolicyTests(unittest.TestCase):
             override_dir = Path(tmp) / ".security-skill"
             override_dir.mkdir()
             incomplete = {"policyVersion": "1.0.0", "actions": {"Critical": "block-merge"}}
-            (override_dir / "policy.json").write_text(json.dumps(incomplete))
+            (override_dir / "policy.json").write_text(json.dumps(incomplete), encoding="utf-8")
 
             with self.assertRaises(engine.PolicyError):
                 engine.resolve_policy(tmp)
@@ -204,7 +204,7 @@ class ResolvePolicyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             override_dir = Path(tmp) / ".security-skill"
             override_dir.mkdir()
-            (override_dir / "policy.json").write_text("{not valid json")
+            (override_dir / "policy.json").write_text("{not valid json", encoding="utf-8")
 
             with self.assertRaises(engine.PolicyError):
                 engine.resolve_policy(tmp)
@@ -220,7 +220,7 @@ class ResolvePolicyTests(unittest.TestCase):
 
 class LoaderTests(unittest.TestCase):
     def test_load_default_policy_matches_file_on_disk(self) -> None:
-        on_disk = json.loads((POLICY_DIR / "default-policy.json").read_text())
+        on_disk = json.loads((POLICY_DIR / "default-policy.json").read_text(encoding="utf-8"))
         self.assertEqual(engine.load_default_policy(), on_disk)
 
     def test_load_repo_policy_returns_none_when_no_override_dir_at_all(self) -> None:
@@ -242,7 +242,7 @@ class CliTests(unittest.TestCase):
     def test_success_prints_json_result_and_returns_0(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             report_path = Path(tmp) / "report.json"
-            report_path.write_text(json.dumps({"findings": [_finding("f-1", "Critical")]}))
+            report_path.write_text(json.dumps({"findings": [_finding("f-1", "Critical")]}), encoding="utf-8")
 
             code, out, err = self._run([str(report_path)])
 
@@ -254,10 +254,10 @@ class CliTests(unittest.TestCase):
     def test_invalid_repo_override_prints_error_and_returns_1(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             report_path = Path(tmp) / "report.json"
-            report_path.write_text(json.dumps({"findings": []}))
+            report_path.write_text(json.dumps({"findings": []}), encoding="utf-8")
             override_dir = Path(tmp) / ".security-skill"
             override_dir.mkdir()
-            (override_dir / "policy.json").write_text(json.dumps({"policyVersion": "1.0.0", "actions": {}}))
+            (override_dir / "policy.json").write_text(json.dumps({"policyVersion": "1.0.0", "actions": {}}), encoding="utf-8")
 
             code, out, err = self._run([str(report_path), "--repo-root", tmp])
 
@@ -268,14 +268,14 @@ class CliTests(unittest.TestCase):
     def test_repo_root_flag_is_actually_applied(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             report_path = Path(tmp) / "report.json"
-            report_path.write_text(json.dumps({"findings": [_finding("f-1", "Critical")]}))
+            report_path.write_text(json.dumps({"findings": [_finding("f-1", "Critical")]}), encoding="utf-8")
             override_dir = Path(tmp) / ".security-skill"
             override_dir.mkdir()
             looser = {
                 "policyVersion": "1.0.0",
                 "actions": {"Critical": "notify", "High": "notify", "Medium": "notify", "Low": "none", "Info": "none"},
             }
-            (override_dir / "policy.json").write_text(json.dumps(looser))
+            (override_dir / "policy.json").write_text(json.dumps(looser), encoding="utf-8")
 
             code, out, _ = self._run([str(report_path), "--repo-root", tmp])
 
@@ -289,19 +289,57 @@ class ConsistencyTests(unittest.TestCase):
     CrossRepoConsistencyTests."""
 
     def test_action_order_matches_schema_action_enum(self) -> None:
-        schema = json.loads((POLICY_DIR / "policy.schema.json").read_text())
+        schema = json.loads((POLICY_DIR / "policy.schema.json").read_text(encoding="utf-8"))
         schema_actions = set(schema["$defs"]["action"]["enum"])
         self.assertEqual(set(engine.ACTION_ORDER), schema_actions)
 
     def test_severity_order_matches_policy_schema_required_keys(self) -> None:
-        schema = json.loads((POLICY_DIR / "policy.schema.json").read_text())
+        schema = json.loads((POLICY_DIR / "policy.schema.json").read_text(encoding="utf-8"))
         required = set(schema["properties"]["actions"]["required"])
         self.assertEqual(set(engine.SEVERITY_ORDER), required)
 
     def test_severity_order_matches_finding_schema_severity_enum(self) -> None:
-        finding_schema = json.loads((SCHEMA_DIR / "finding.schema.json").read_text())
+        finding_schema = json.loads((SCHEMA_DIR / "finding.schema.json").read_text(encoding="utf-8"))
         severity_enum = set(finding_schema["$defs"]["severity"]["enum"])
         self.assertEqual(set(engine.SEVERITY_ORDER), severity_enum)
+
+
+class CrossPlatformEncodingTests(unittest.TestCase):
+    """Regression guard for plan 022 — see schema/test_renderers.py's
+    class of the same name for the full rationale."""
+
+    def test_policy_schema_contains_non_ascii_and_still_reads_cleanly(self) -> None:
+        content = (POLICY_DIR / "policy.schema.json").read_text(encoding="utf-8")
+        self.assertIn("—", content)
+
+    def test_round_trip_non_ascii_content_with_explicit_utf8(self) -> None:
+        text = "em dash — and middle dot · round-trip"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "roundtrip.txt"
+            path.write_text(text, encoding="utf-8")
+            self.assertEqual(path.read_text(encoding="utf-8"), text)
+
+
+class SourceEncodingAuditTests(unittest.TestCase):
+    """Static-analysis regression guard — see schema/test_renderers.py's
+    class of the same name. Scans every .py file in this directory."""
+
+    def test_no_read_or_write_text_call_omits_encoding(self) -> None:
+        import ast
+
+        violations = []
+        for path in sorted(POLICY_DIR.glob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in ("read_text", "write_text")
+                ):
+                    kwarg_names = {kw.arg for kw in node.keywords}
+                    if "encoding" not in kwarg_names:
+                        violations.append(f"{path.name}:{node.lineno} .{node.func.attr}() missing encoding=")
+        self.assertEqual(violations, [])
 
 
 if __name__ == "__main__":

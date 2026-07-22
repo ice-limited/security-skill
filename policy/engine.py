@@ -38,7 +38,7 @@ class PolicyError(Exception):
 
 
 def load_default_policy() -> dict:
-    return json.loads((POLICY_DIR / "default-policy.json").read_text())
+    return json.loads((POLICY_DIR / "default-policy.json").read_text(encoding="utf-8"))
 
 
 def load_repo_policy(repo_root: Path) -> dict | None:
@@ -50,7 +50,7 @@ def load_repo_policy(repo_root: Path) -> dict | None:
     if not override_path.exists():
         return None
     try:
-        policy = json.loads(override_path.read_text())
+        policy = json.loads(override_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         raise PolicyError(f"{override_path} is not valid JSON: {e}") from e
     errors = validate_policy(policy)
@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        report = json.loads(args.report.read_text())
+        report = json.loads(args.report.read_text(encoding="utf-8"))
         policy = resolve_policy(args.repo_root)
         result = evaluate_report(report, policy)
     except PolicyError as e:
@@ -129,4 +129,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # Reconfigured here, not inside main(), so tests that redirect
+    # stdout/stderr to an io.StringIO (which has no .reconfigure()) can
+    # still call main() directly. See plans/022-cross-platform-compatibility.md.
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     sys.exit(main())

@@ -33,8 +33,11 @@ def find_unknown_references(report: dict) -> list[str]:
 
 
 if __name__ == "__main__":
+    # See plans/022-cross-platform-compatibility.md.
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     report_path = Path(sys.argv[1])
-    report = json.loads(report_path.read_text())
+    report = json.loads(report_path.read_text(encoding="utf-8"))
     problems = find_unknown_references(report)
     if problems:
         for p in problems:

@@ -1,0 +1,11 @@
+# Normalize line endings to LF for all text files regardless of the
+# committer's OS/git config — see plans/022-cross-platform-compatibility.md
+# in the security-skill-workspace repo. Prevents a Windows contributor's
+# local core.autocrlf from introducing CRLF into files this repo treats
+# as LF-only (JSON schemas/data, Python source, golden test fixtures).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary

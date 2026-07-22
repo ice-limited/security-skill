@@ -46,6 +46,14 @@ invalid override raises rather than silently falling back to the
 default (fail loud — a broken override is a config bug to fix, not to
 paper over).
 
+## Cross-platform
+
+Every file read/write here specifies `encoding="utf-8"` explicitly, and
+`engine.py`/`validate.py` reconfigure stdout/stderr to UTF-8 (plan 022).
+Verify with:
+`LC_ALL=en_US.US-ASCII LANG=en_US.US-ASCII python3 -m unittest test_engine -v`
+(macOS/Linux; see the top-level `security-skill/README.md`).
+
 ## Not this module's job
 
 - Deciding which individual findings get suppressed (plan 004) — this

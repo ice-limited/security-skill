@@ -17,7 +17,7 @@ SCHEMA_DIR = Path(__file__).parent
 
 
 def _load(name: str) -> dict:
-    return json.loads((SCHEMA_DIR / name).read_text())
+    return json.loads((SCHEMA_DIR / name).read_text(encoding="utf-8"))
 
 
 def validate_report(report: dict) -> list[str]:
@@ -36,8 +36,11 @@ def validate_report(report: dict) -> list[str]:
 
 
 if __name__ == "__main__":
+    # See plans/022-cross-platform-compatibility.md.
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     report_path = Path(sys.argv[1])
-    report = json.loads(report_path.read_text())
+    report = json.loads(report_path.read_text(encoding="utf-8"))
     errors = validate_report(report)
     if errors:
         for err in errors:

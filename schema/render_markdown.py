@@ -63,5 +63,11 @@ def render_markdown(report: dict) -> str:
 
 
 if __name__ == "__main__":
+    # Explicit, not locale-dependent: a non-UTF-8 default (common on
+    # Windows) would otherwise raise UnicodeDecodeError/UnicodeEncodeError
+    # on the non-ASCII characters this codebase's data already contains.
+    # See plans/022-cross-platform-compatibility.md.
+    sys.stdin.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     data = json.load(sys.stdin)
     sys.stdout.write(render_markdown(data))
