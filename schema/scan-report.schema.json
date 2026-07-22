@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:cpmatch:security-skill:schema:scan-report:1.1.0",
+  "$id": "urn:cpmatch:security-skill:schema:scan-report:1.2.0",
   "title": "ScanReport",
   "description": "Canonical envelope for one security-skill scan run: run metadata plus the findings it produced. Decided 2026-07-22 (see meetings/2026-07-22-1056-plan-001-kickoff.md): single JSON object per scan run, not JSON Lines. Does NOT embed the policy verdict (block/require-review/ticket/notify) — that is produced separately by plans/003-policy-engine.md and plans/016-action-layer-integrations-gate.md, consuming this report as input.",
   "type": "object",
@@ -17,8 +17,8 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "1.1.0",
-      "description": "Version of this scan-report schema (semver). Bump when the shape of ScanReport or Finding changes in a breaking way. Bumped 1.0.0 -> 1.1.0 at plan 023's implementation (2026-07-22) to add 'auth' to finding.schema.json's subSkill enum."
+      "const": "1.2.0",
+      "description": "Version of this scan-report schema (semver). Bump when the shape of ScanReport or Finding changes in a breaking way. Bumped 1.0.0 -> 1.1.0 at plan 023's implementation (2026-07-22) to add 'auth' to finding.schema.json's subSkill enum. Bumped 1.1.0 -> 1.2.0 at plan 013's implementation (2026-07-22) to add 'cicd-pipeline'."
     },
     "scanId": {
       "type": "string",

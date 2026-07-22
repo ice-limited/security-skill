@@ -1,0 +1,100 @@
+{
+  "items": [
+    {
+      "ruleId": "cicd-pipeline.unpinned-external-reference",
+      "weaknessClass": "supply-chain-integrity",
+      "title": "External action/image/plugin reference is not pinned to an immutable digest",
+      "guidance": "Look for a third-party reference that uses a mutable tag or branch name instead of a full commit SHA / immutable digest: a GitHub Actions `uses:` referencing a tag (e.g. `actions/checkout@v4`) or a branch (`@main`); a GitLab CI `image:`/`services:` referencing a tag (e.g. `node:20`) instead of a digest (`node@sha256:...`); a Jenkinsfile referencing a plugin version range or an unpinned Docker image in a `docker.image(...)` / `agent { docker { image ... } }` block. First-party/same-org references and pinned first-party actions from the same GitHub org as the repo are lower priority than third-party ones.",
+      "evidenceRequirement": "Cite the specific reference (file:line) and confirm it is genuinely mutable — a full-length commit SHA (40 hex chars) or a content digest (`sha256:...`) is NOT a finding even though it superficially looks like an unpinned string; a short SHA, a tag, or a branch name is.",
+      "formatNotes": {
+        "github-actions": "Check every `uses:` value in every job's `steps:` — including nested/composite actions and reusable workflow calls (`uses: org/repo/.github/workflows/x.yml@ref`).",
+        "gitlab-ci": "Check `image:`, `services:`, and any `include:` referencing an external project/ref.",
+        "jenkinsfile": "Check `agent { docker { image ... } }` blocks and any `@Library('name@version')` plugin/shared-library annotations."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-1357" },
+        { "standard": "OWASP-Top10", "id": "A03:2025" }
+      ],
+      "suggestedSeverity": "Medium",
+      "confidenceGuidance": {
+        "defaultMax": 65,
+        "rationale": "Confirming a reference is genuinely mutable (vs. a full-length SHA formatted similarly to other hex-looking strings) requires reading the exact string carefully — cap below a deterministic pattern match's typical confidence."
+      },
+      "problemTemplate": "{file}:{line} references {reference} using a mutable tag/branch rather than an immutable commit SHA or digest.",
+      "impactTemplate": "The exact content behind {reference} can change without any corresponding change to this pipeline config — a compromised or maliciously updated upstream action/image/plugin can be pulled silently on the next run, with the same permissions and secrets access this pipeline already has.",
+      "recommendationTemplate": "Pin {reference} to a specific, immutable commit SHA or content digest, and update deliberately (e.g. via Dependabot/Renovate) rather than tracking a mutable tag."
+    },
+    {
+      "ruleId": "cicd-pipeline.excessive-pipeline-permissions",
+      "weaknessClass": "excessive-privilege",
+      "title": "Pipeline grants broader credential permissions than the job needs",
+      "guidance": "Look for a job (not just the workflow's top level — job-level `permissions:` in GitHub Actions overrides the workflow-level block, so a job with no explicit `permissions:` inherits the workflow default, and a job that DOES declare one must be checked on its own terms) whose granted scopes exceed what its steps actually use. Distinguish two tiers: (1) `permissions: write-all` or an equivalent maximal grant — always a finding, high confidence; (2) a named scope list that is merely broader than the job's own steps require (e.g. `contents: write` on a job that only reads) — a real finding, but genuinely context-dependent, so keep confidence lower and cite exactly which steps do NOT need the granted scope. Also applies to GitLab CI job-level `id_tokens`/inherited `CI_JOB_TOKEN` scope and Jenkinsfile credential-binding blocks (`withCredentials`) granting more than one step needs.",
+      "evidenceRequirement": "Cite the specific job and its actual steps, and name which granted scope(s) none of those steps use — not just that the grant looks broad in isolation. For the maximal write-all/equivalent case, no further evidence is needed beyond the grant itself.",
+      "formatNotes": {
+        "github-actions": "Check both the workflow-level `permissions:` block and each job's own `permissions:` (job-level overrides workflow-level, per ก้อง's note at this plan's kickoff) — a workflow-level `contents: read` does NOT protect a job that separately declares `permissions: write-all`.",
+        "gitlab-ci": "Check `id_tokens:` scope and whether `CI_JOB_TOKEN`'s project/group access is broader than the job's own script needs.",
+        "jenkinsfile": "Check `withCredentials([...])` blocks binding more credential IDs than the enclosed steps actually reference."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-269" },
+        { "standard": "OWASP-Top10", "id": "A06:2025" }
+      ],
+      "suggestedSeverity": "High",
+      "confidenceGuidance": {
+        "defaultMax": 60,
+        "rationale": "The maximal write-all case is high-confidence on its own (and already caught deterministically by rules.py's CKV2_GHA_1 for GitHub Actions specifically) — this playbook item's own default max is set for the harder, genuinely context-dependent non-maximal case, which needs real step-by-step reasoning to confirm."
+      },
+      "problemTemplate": "{file}:{line}'s job {job} is granted {grantedScope}, broader than its steps actually use.",
+      "impactTemplate": "A compromised or subverted step in {job} (a poisoned dependency, a malicious third-party action/image, injected untrusted input) inherits {grantedScope} — able to take actions well beyond what this job's own legitimate work requires.",
+      "recommendationTemplate": "Narrow {job}'s granted permissions/credentials to exactly what its steps use, following least privilege."
+    },
+    {
+      "ruleId": "cicd-pipeline.script-injection-untrusted-input",
+      "weaknessClass": "code-injection",
+      "title": "Untrusted, attacker-influenceable input is interpolated directly into a shell command",
+      "guidance": "Look for a pipeline script step that interpolates untrusted, PR/issue/branch-derived input directly into a shell command line, beyond the narrow regex-based patterns rules.py's deterministic CKV_GHA_2 check already catches. Untrusted sources include: PR title/body, issue title/body, branch name, commit message/author, forked-repo variables in a `pull_request_target`-triggered workflow, and any GitLab CI predefined variable derived from a merge request's own metadata (`CI_MERGE_REQUEST_TITLE`, etc.) or a Jenkinsfile parameter/webhook payload field an external caller controls.",
+      "evidenceRequirement": "Cite the specific step and the exact untrusted value being interpolated, and confirm it reaches an actual shell/command context (not just an environment variable assignment that a later step never re-interprets as code) — trace the value from its untrusted source to where it's actually executed.",
+      "formatNotes": {
+        "github-actions": "`${{ github.event.pull_request.title }}`, `${{ github.event.issue.title }}`, `${{ github.head_ref }}`, and similar expression contexts interpolated directly into a `run:` block are the classic pattern — especially dangerous combined with a `pull_request_target` trigger, which runs with the base repo's secrets against a forked PR's content.",
+        "gitlab-ci": "`$CI_MERGE_REQUEST_TITLE`, `$CI_COMMIT_MESSAGE`, and similar predefined variables interpolated directly into a `script:` line.",
+        "jenkinsfile": "A `params.*` value or a webhook/trigger payload field interpolated into a `sh '...'`/`bat '...'` string via Groovy string interpolation (`\"${params.X}\"`) rather than passed as a separate argument."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-94" },
+        { "standard": "OWASP-Top10", "id": "A05:2025" }
+      ],
+      "suggestedSeverity": "Critical",
+      "confidenceGuidance": {
+        "defaultMax": 65,
+        "rationale": "Confirming the value is genuinely untrusted (vs. a value already validated/constrained upstream) and genuinely reaches a shell context requires tracing indirect flow an agent can miss — cap below a deterministic pattern match's typical confidence."
+      },
+      "problemTemplate": "{file}:{line} interpolates {untrustedValue} directly into a shell command in step {step}.",
+      "impactTemplate": "An attacker who controls {untrustedValue} (e.g. by opening a PR/issue with a crafted title, or pushing a crafted branch/commit message) can inject arbitrary shell commands that execute with this pipeline's own permissions and secrets access.",
+      "recommendationTemplate": "Pass {untrustedValue} through an intermediate environment variable instead of interpolating it directly into the shell command string, so the shell does not re-parse it as code."
+    },
+    {
+      "ruleId": "cicd-pipeline.secrets-in-logs",
+      "weaknessClass": "information-exposure",
+      "title": "Secret value is printed, echoed, or otherwise exposed in build output",
+      "guidance": "Look for a step that prints a secret/credential value to stdout/stderr (and therefore into the build log) beyond the narrow curl-with-secret pattern rules.py's deterministic check already catches — an explicit `echo $SECRET`/`print(secret)`, a debug/verbose flag on a tool that dumps its full config (including credentials) to output, or a secret value used in a way the platform's own log-masking doesn't cover (e.g. transformed/encoded before printing, defeating simple string-match redaction).",
+      "evidenceRequirement": "Cite the specific step and confirm the value reaching stdout/stderr is actually a secret (from a `secrets.*`/masked CI variable context, or a credential read from a file/vault) — printing a non-secret value is not a finding even if it superficially looks sensitive (e.g. a public config key).",
+      "formatNotes": {
+        "github-actions": "Check for `echo`/`print`/`console.log` of a `${{ secrets.* }}` value, and for `::debug::`/verbose flags on tools known to dump credentials in verbose mode.",
+        "gitlab-ci": "Check for `echo`/`cat` of a masked CI/CD variable, and whether `CI_DEBUG_TRACE` is enabled (it disables GitLab's own log masking entirely when set).",
+        "jenkinsfile": "Check for a credential bound via `withCredentials`/`environment` being echoed or passed to a command with `-v`/`--verbose` that logs its arguments."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-532" },
+        { "standard": "OWASP-Top10", "id": "A09:2025" }
+      ],
+      "suggestedSeverity": "High",
+      "confidenceGuidance": {
+        "defaultMax": 65,
+        "rationale": "Confirming a printed value is really a secret (not just something that looks credential-shaped) and really reaches unmasked output requires tracing its origin — cap below a deterministic pattern match's typical confidence."
+      },
+      "problemTemplate": "{file}:{line} in step {step} exposes {secretName} in build output.",
+      "impactTemplate": "Anyone with read access to this pipeline's build logs (which is often broader than access to the secret store itself — other team members, CI dashboard viewers) can recover {secretName}'s value.",
+      "recommendationTemplate": "Remove the print/echo of {secretName}; if debug output is needed, redact or omit the credential-bearing fields specifically, and disable any debug/trace mode known to bypass the platform's own log masking."
+    }
+  ]
+}

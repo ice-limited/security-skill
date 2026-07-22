@@ -41,20 +41,18 @@ check with no real security relevance.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import sys
+from pathlib import Path
 
+_common_dir = next(p for p in Path(__file__).resolve().parents if (p / "common").is_dir()) / "common"
+sys.path.insert(0, str(_common_dir))
+from checkov_wrapper import CheckovRule  # noqa: E402
 
-@dataclass(frozen=True)
-class CheckovRule:
-    rule_id: str
-    title: str
-    problem: str
-    impact: str
-    recommendation: str
-    references: list[dict]
-    severity: str
-    confidence: int
-    check_ids: dict[str, str]  # framework ("terraform"/"cloudformation"/"ansible") -> checkov check_id
+# CheckovRule moved to common/checkov_wrapper.py at plan 013's
+# implementation — 013 is Checkov's second consumer (011 is the
+# first), the trigger plan 005 already established for extracting
+# shared tool-wrapper logic (see common/checkov_wrapper.py's own
+# docstring).
 
 
 _IAM_PRIVILEGE_REFS = [{"standard": "CWE", "id": "CWE-269"}, {"standard": "OWASP-Top10", "id": "A06:2025"}]

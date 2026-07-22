@@ -473,7 +473,7 @@ class ErrorHandlingTests(unittest.TestCase):
             scanner.scan_paths(["/tmp/definitely-does-not-exist-011-iac"])
 
     def test_missing_checkov_binary_raises_actionable_error(self) -> None:
-        with mock.patch("scanner.shutil.which", return_value=None):
+        with mock.patch("scanner._cw.shutil.which", return_value=None):
             with self.assertRaises(ScannerError) as ctx:
                 scanner.run_checkov("irrelevant")
         self.assertIn("pip install checkov", str(ctx.exception))
@@ -485,7 +485,7 @@ class ErrorHandlingTests(unittest.TestCase):
         # mask whether the return-code check does anything).
         fake_proc = mock.Mock(returncode=2, stdout="", stderr="mocked CLI error")
         with tempfile.TemporaryDirectory() as tmp:
-            with mock.patch("scanner.subprocess.run", return_value=fake_proc):
+            with mock.patch("scanner._cw.subprocess.run", return_value=fake_proc):
                 with self.assertRaises(ScannerError):
                     scanner.run_checkov(tmp)
 
@@ -495,7 +495,7 @@ class ErrorHandlingTests(unittest.TestCase):
         for code in (0, 1):
             fake_proc = mock.Mock(returncode=code, stdout='{"passed": 0, "failed": 0, "skipped": 0, "parsing_errors": 0, "resource_count": 0, "checkov_version": "3.3.8"}', stderr="")
             with tempfile.TemporaryDirectory() as tmp:
-                with mock.patch("scanner.subprocess.run", return_value=fake_proc):
+                with mock.patch("scanner._cw.subprocess.run", return_value=fake_proc):
                     self.assertEqual(scanner.run_checkov(tmp), [])
 
 
@@ -528,7 +528,7 @@ class MappingTests(unittest.TestCase):
     def test_resolve_file_path_makes_relative_path_absolute(self) -> None:
         # Direct unit test of the CloudFormation file_abs_path bug fix.
         check = {"file_abs_path": "template.yaml"}
-        resolved = scanner._resolve_file_path(check)
+        resolved = scanner._cw._resolve_file_path(check)
         self.assertTrue(Path(resolved).is_absolute(), resolved)
         self.assertTrue(resolved.endswith("template.yaml"))
 
@@ -542,7 +542,7 @@ class MappingTests(unittest.TestCase):
             real_file = Path(tmp) / "main.tf"
             real_file.write_text("", encoding="utf-8")
             check = {"file_abs_path": str(real_file)}
-            resolved = scanner._resolve_file_path(check)
+            resolved = scanner._cw._resolve_file_path(check)
         self.assertEqual(Path(resolved), real_file.resolve())
 
 
@@ -556,7 +556,7 @@ class RunCheckovOutputNormalizationTests(unittest.TestCase):
     def _run_with_stdout(self, stdout: str):
         fake_proc = mock.Mock(returncode=0, stdout=stdout, stderr="")
         with tempfile.TemporaryDirectory() as tmp:
-            with mock.patch("scanner.subprocess.run", return_value=fake_proc):
+            with mock.patch("scanner._cw.subprocess.run", return_value=fake_proc):
                 return scanner.run_checkov(tmp)
 
     def test_bare_summary_dict_with_no_check_type_normalizes_to_empty_list(self) -> None:
