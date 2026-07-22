@@ -51,6 +51,20 @@ against this knowledge base — a *semantic* check (does this ID actually
 exist?), distinct from `schema/validate.py`'s structural JSON Schema
 check (is the shape right?).
 
+```
+python3 check_freshness.py
+GITHUB_TOKEN=ghp_... python3 check_freshness.py   # higher rate limit
+```
+
+Checks whether `owasp-top10.json`, `owasp-asvs.json`, and
+`owasp-api-top10.json`'s recorded `_edition` still matches each
+standard's current edition on GitHub (the mechanism that would have
+caught the stale-2021-edition mistake plan 002 almost shipped). It
+**flags** drift for manual re-verification — it does not rewrite these
+files itself. See `plans/021-knowledge-base-freshness-checker.md` in the
+security-skill-workspace repo. On-demand only for now; not wired into
+CI/scheduling yet.
+
 ## Growing this data
 
 Add entries as sub-skill detectors (plans 006–014) need to cite them —

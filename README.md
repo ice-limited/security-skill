@@ -44,4 +44,6 @@ policy/            Severity -> action policy engine and org config —
 ```
 cd schema && pip install -r requirements.txt && python3 -m unittest test_renderers -v
 cd ../knowledge && python3 -m unittest test_knowledge -v
+cd ../knowledge && python3 -m unittest test_check_freshness -v      # mocked, no network
+cd ../knowledge && RUN_LIVE_TESTS=1 python3 -m unittest test_check_freshness -v   # hits real GitHub API
 ```
