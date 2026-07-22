@@ -91,7 +91,19 @@ def scan_text(content: str, file: str, artifact_type: str = "source-code") -> li
             if rule.requires_entropy_check and not _looks_random(value):
                 continue
 
-            start_char, end_char = match.start(), match.end()
+            # Real bug found at plan 015's implementation (2026-07-23):
+            # a rule whose pattern captures the secret in a group
+            # narrower than the full match (generic-api-key's variable
+            # name + operator prefix; azure-ad-client-secret's
+            # boundary-character lookarounds) previously used the
+            # *whole match's* span here, not the captured value's own
+            # span — location.startByte/endByte silently covered far
+            # more than the actual secret (e.g. the variable name and
+            # `=` too), discovered when 015's redaction patch generator
+            # sliced that span and produced broken, over-wide output.
+            # Mirrors the same "prefer group 1 when present" logic
+            # `value` above already uses.
+            start_char, end_char = (match.start(1), match.end(1)) if match.groups() else (match.start(), match.end())
             start_line = _line_number(content, start_char)
             end_line = _line_number(content, end_char)
             start_byte = _byte_offset(content, start_char)

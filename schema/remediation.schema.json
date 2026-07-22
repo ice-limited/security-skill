@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cpmatch:security-skill:schema:remediation:1.0.0",
+  "title": "Remediation",
+  "description": "A proposed remediation for one Finding (finding.schema.json) — decided at plan 015's kickoff to be its own record, not a retrofit onto Finding (see CONTEXT.md §10.1 and plans/015-action-layer-recommendations-autofix.md). Pure data: this schema describes what could be applied, never something this project's own code applies itself — no field here implies a file was written, a git command was run, or an external API was called.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["remediationId", "findingId", "ruleId", "safetyTier", "recommendation"],
+  "properties": {
+    "remediationId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier for this remediation (hash of findingId + ruleId, mirroring Finding's own findingId convention)."
+    },
+    "findingId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The finding.schema.json Finding this remediation applies to."
+    },
+    "ruleId": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$",
+      "description": "Denormalized from the source Finding for convenience — same value, same naming convention."
+    },
+    "safetyTier": {
+      "type": "string",
+      "enum": ["auto-apply", "review-required", "recommend-only"],
+      "description": "Per CONTEXT.md §10.1: 'auto-apply' = generic/reversible/no org-specific knowledge required; 'review-required' = a patch exists but needs domain judgment before applying; 'recommend-only' = no patch is possible, the recommendation itself requires org-specific context this skill has no access to. A property of the finding's ruleId/class (see action/safety_tiers.json), occasionally overridden per-finding when location context is ambiguous."
+    },
+    "recommendation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Actionable guidance — may extend/restate the source Finding's own recommendation field with more specific framing, but is not required to differ from it."
+    },
+    "patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "location", "originalText", "replacementText", "unifiedDiff"],
+      "description": "Present only when a genuinely mechanical, ruleId-specific transformation exists (v1: secret.* only, see plans/015-action-layer-recommendations-autofix.md). This is data describing a proposed change — never applied by this project's own code.",
+      "properties": {
+        "file": { "type": "string", "minLength": 1, "description": "Repo-relative path, same convention as Finding's location.file." },
+        "location": { "$ref": "finding.schema.json#/$defs/location" },
+        "originalText": { "type": "string", "description": "The exact text this patch replaces, at `location`." },
+        "replacementText": { "type": "string", "description": "The proposed replacement text." },
+        "unifiedDiff": { "type": "string", "minLength": 1, "description": "Rendered unified-diff string (e.g. via Python's stdlib difflib) for human review or `git apply`." }
+      }
+    },
+    "impactOfFix": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The proposed fix's own consequences (e.g. 'this tightened IAM policy will block actions X/Y/Z the current one allows') — distinct from finding.schema.json's `impact`, which describes the vulnerability, not the remediation. Present only when `patch` is present."
+    },
+    "pullRequestDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "body"],
+      "description": "Content only — title/body text for a pull request, for a downstream integration (plan 016) to actually open via a real API. This project's own code never calls that API. Present only when `patch` is present.",
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "body": { "type": "string", "minLength": 1 }
+      }
+    },
+    "detectorSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "description": "Which module (and version) produced this remediation, mirroring Finding's own detectorSource."
+    }
+  },
+  "if": {
+    "anyOf": [{ "required": ["impactOfFix"] }, { "required": ["pullRequestDraft"] }]
+  },
+  "then": {
+    "required": ["patch"]
+  }
+}

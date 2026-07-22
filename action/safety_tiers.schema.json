@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-skill.cpmatch.internal/action/safety_tiers.schema.json",
+  "title": "Safety Tier Table",
+  "description": "Per plan 015 (Action Layer): maps a ruleId (or, as a fallback, a subSkill) to one of finding.schema.json's remediation safety tiers. See plans/015-action-layer-recommendations-autofix.md and CONTEXT.md §10.1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subSkillDefaults", "ruleOverrides"],
+  "properties": {
+    "_note": {
+      "type": "string",
+      "description": "Free-text provenance/rationale note, same convention as knowledge/*.json's own _note fields — not schema-validated content, just documentation."
+    },
+    "subSkillDefaults": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/tier" },
+      "description": "Fallback tier per subSkill, used when a ruleId has no entry in ruleOverrides — needed for sub-skills (e.g. code-review) whose ruleIds are generated dynamically, not from a fixed, enumerable catalog."
+    },
+    "ruleOverrides": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/tier" },
+      "description": "Explicit tier per ruleId — takes precedence over subSkillDefaults whenever present."
+    }
+  },
+  "$defs": {
+    "tier": {
+      "type": "string",
+      "enum": ["auto-apply", "review-required", "recommend-only"]
+    }
+  }
+}

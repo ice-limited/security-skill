@@ -1,4 +1,8 @@
-"""Validate a ScanReport JSON file against scan-report.schema.json.
+"""Validate a ScanReport JSON file against scan-report.schema.json, or a
+Remediation JSON file against remediation.schema.json (plan 015 —
+remediation.schema.json's own `patch.location` field `$ref`s
+finding.schema.json's location def, the same cross-file `$ref` need
+`validate_report` already resolves for ScanReport's `findings[]`).
 
 Usage: python3 validate.py path/to/report.json
 Requires the `jsonschema` package (see requirements.txt).
@@ -24,17 +28,25 @@ def _load(name: str) -> dict:
     return json.loads((SCHEMA_DIR / name).read_text(encoding="utf-8"))
 
 
-def validate_report(report: dict) -> list[str]:
-    finding_schema = _load("finding.schema.json")
-    scan_report_schema = _load("scan-report.schema.json")
-
-    registry = Registry().with_resources(
+def _finding_registry(finding_schema: dict) -> Registry:
+    return Registry().with_resources(
         [
             (finding_schema["$id"], Resource.from_contents(finding_schema)),
             ("finding.schema.json", Resource.from_contents(finding_schema)),
         ]
     )
-    return validate_against_schema(scan_report_schema, report, registry=registry)
+
+
+def validate_report(report: dict) -> list[str]:
+    finding_schema = _load("finding.schema.json")
+    scan_report_schema = _load("scan-report.schema.json")
+    return validate_against_schema(scan_report_schema, report, registry=_finding_registry(finding_schema))
+
+
+def validate_remediation(remediation: dict) -> list[str]:
+    finding_schema = _load("finding.schema.json")
+    remediation_schema = _load("remediation.schema.json")
+    return validate_against_schema(remediation_schema, remediation, registry=_finding_registry(finding_schema))
 
 
 if __name__ == "__main__":

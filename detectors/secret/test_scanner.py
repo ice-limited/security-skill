@@ -174,6 +174,38 @@ class LocationPrecisionTests(unittest.TestCase):
         aws_finding = next(f for f in findings if f["ruleId"] == "secret.aws-access-key")
         self.assertEqual(aws_finding["location"]["startLine"], 3)
 
+    def test_generic_api_key_location_spans_only_the_captured_value(self) -> None:
+        # Real bug found at plan 015's implementation (2026-07-23), not
+        # caught by this suite before: generic-api-key's pattern
+        # captures the secret in a group narrower than the whole match
+        # (the variable name + operator aren't part of the group) —
+        # location.startByte/endByte previously covered the *whole
+        # match* (e.g. `AWS_ACCESS_KEY = "kX9m...`), not just the
+        # captured value, silently over-wide by everything before the
+        # value itself. 015's redaction patch generator sliced that
+        # span directly and produced broken output, which is how this
+        # was found.
+        content = f'AWS_ACCESS_KEY = "{FAKE_HIGH_ENTROPY_GENERIC}"'
+        findings = scanner.scan_text(content, "config.py")
+        finding = next(f for f in findings if f["ruleId"] == "secret.generic-api-key")
+        loc = finding["location"]
+        encoded = content.encode("utf-8")
+        matched_text = encoded[loc["startByte"] : loc["endByte"]].decode("utf-8")
+        self.assertEqual(matched_text, FAKE_HIGH_ENTROPY_GENERIC)
+
+    def test_azure_ad_client_secret_location_excludes_boundary_characters(self) -> None:
+        # Same class of bug as above: the pattern's boundary lookarounds
+        # (quote/whitespace/etc. before and after) sit outside the
+        # capture group, so the un-fixed span included one boundary
+        # character on each side.
+        content = f'clientSecret = "{FAKE_AZURE_SECRET}"'
+        findings = scanner.scan_text(content, "settings.py")
+        finding = next(f for f in findings if f["ruleId"] == "secret.azure-ad-client-secret")
+        loc = finding["location"]
+        encoded = content.encode("utf-8")
+        matched_text = encoded[loc["startByte"] : loc["endByte"]].decode("utf-8")
+        self.assertEqual(matched_text, FAKE_AZURE_SECRET)
+
 
 class FindingIdTests(unittest.TestCase):
     def test_deterministic_for_identical_input(self) -> None:
