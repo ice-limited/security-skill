@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cpmatch:security-skill:schema:exceptions:1.0.0",
+  "title": "Exceptions",
+  "description": "Per-repo suppression list, keyed by findingId (finding.schema.json — a hash of ruleId + normalized location + repo, so it survives detector wording changes but stops matching once the code or rule changes). See plans/004-decision-layer-scoring.md and meetings/2026-07-22-1304-plan-004-kickoff.md in the security-skill-workspace repo for why this is a centralized file rather than inline code comments.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["exceptionsVersion", "exceptions"],
+  "properties": {
+    "exceptionsVersion": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Version of this exceptions schema (semver). Bump when the shape changes in a breaking way."
+    },
+    "exceptions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/exception" }
+    }
+  },
+  "$defs": {
+    "exception": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findingId", "reason"],
+      "properties": {
+        "findingId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Must match a finding's findingId (finding.schema.json)."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Free text explaining why this finding is suppressed — becomes the finding's suppressionReason."
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional ISO 8601 date (YYYY-MM-DD). Once past, this exception no longer suppresses — prevents a 'temporary' suppression from silently becoming permanent. Omit for no expiry."
+        }
+      }
+    }
+  }
+}

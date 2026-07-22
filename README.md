@@ -39,6 +39,9 @@ knowledge/         OWASP/CWE/CAPEC/ATT&CK/NIST-SSDF/CERT reference lookups
 policy/            Severity -> action policy engine, default + per-repo
                    override config. Implemented — see README.md in this
                    directory.
+decision/          Exact-duplicate dedup + exception-based suppression,
+                   sits between detectors and policy/. Implemented — see
+                   README.md in this directory.
 adapters/          Per-tool entry points (SKILL.md for Claude Code, AGENTS.md
                    for Codex/OpenCode/Cursor/etc.) — planned, not yet built.
 detectors/         Detection rules per sub-skill (code review, dependency,
@@ -56,6 +59,7 @@ cd ../knowledge && python3 -m unittest test_knowledge -v
 cd ../knowledge && python3 -m unittest test_check_freshness -v      # mocked, no network
 cd ../knowledge && RUN_LIVE_TESTS=1 python3 -m unittest test_check_freshness -v   # hits real GitHub API
 cd ../policy && python3 -m unittest test_engine -v
+cd ../decision && python3 -m unittest test_decision -v
 ```
 
 Windows: use `python` (not `python3` — not a standard command name on
