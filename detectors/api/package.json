@@ -1,0 +1,9 @@
+{
+  "name": "security-skill-detectors-api",
+  "private": true,
+  "description": "Node deps for detectors/api/'s Spectral-based OpenAPI spec-lint half. Run 'npm install' here before invoking scanner.py — the first non-Python tooling dependency in this repo (plans/012-api-skill.md).",
+  "dependencies": {
+    "@stoplight/spectral-cli": "^6.16.2",
+    "@stoplight/spectral-owasp-ruleset": "^2.0.1"
+  }
+}
