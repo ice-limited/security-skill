@@ -1,0 +1,11 @@
+{
+  "_note": "Minimal starter set — grows as sub-skill detectors need to cite specific techniques (per plans/002-knowledge-base-standards-mapping.md). Enterprise ATT&CK only.",
+  "T1190": {
+    "title": "Exploit Public-Facing Application",
+    "url": "https://attack.mitre.org/techniques/T1190/"
+  },
+  "T1552": {
+    "title": "Unsecured Credentials",
+    "url": "https://attack.mitre.org/techniques/T1552/"
+  }
+}

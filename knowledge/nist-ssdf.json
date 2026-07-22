@@ -1,0 +1,19 @@
+{
+  "_note": "NIST SP 800-218 (Secure Software Development Framework). Top-level practice groups only — individual practice IDs (e.g. PW.4.4) are added as sub-skills need to cite them.",
+  "PO": {
+    "title": "Prepare the Organization",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  },
+  "PS": {
+    "title": "Protect the Software",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  },
+  "PW": {
+    "title": "Produce Well-Secured Software",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  },
+  "RV": {
+    "title": "Respond to Vulnerabilities",
+    "url": "https://csrc.nist.gov/Projects/ssdf"
+  }
+}

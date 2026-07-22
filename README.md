@@ -27,10 +27,11 @@ schema/            Finding schema (JSON canonical) + Markdown/HTML renderers.
                     Implemented — see finding.schema.json,
                     scan-report.schema.json, render_markdown.py,
                     render_html.py, validate.py, test_renderers.py.
+knowledge/         OWASP/CWE/CAPEC/ATT&CK/NIST-SSDF/CERT reference lookups
+                   + authoritative-only cross-standard mappings.
+                   Implemented — see README.md in this directory.
 adapters/          Per-tool entry points (SKILL.md for Claude Code, AGENTS.md
                    for Codex/OpenCode/Cursor/etc.) — planned, not yet built.
-knowledge/         OWASP/CWE/NIST SSDF/ASVS reference material and mappings
-                   — planned, not yet built.
 detectors/         Detection rules per sub-skill (code review, dependency,
                    iac, kubernetes, docker, api, secret, supply-chain) —
                    planned, not yet built.
@@ -38,10 +39,9 @@ policy/            Severity -> action policy engine and org config —
                    planned, not yet built.
 ```
 
-## Running the schema tests
+## Running the tests
 
 ```
-cd schema
-pip install -r requirements.txt
-python3 -m unittest test_renderers -v
+cd schema && pip install -r requirements.txt && python3 -m unittest test_renderers -v
+cd ../knowledge && python3 -m unittest test_knowledge -v
 ```

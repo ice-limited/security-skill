@@ -44,7 +44,7 @@
       "recommendation": "Use parameterized queries / prepared statements instead of string concatenation.",
       "references": [
         { "standard": "CWE", "id": "CWE-89", "url": "https://cwe.mitre.org/data/definitions/89.html" },
-        { "standard": "OWASP-Top10", "id": "A03:2021" }
+        { "standard": "OWASP-Top10", "id": "A05:2025", "url": "https://owasp.org/Top10/2025/A05_2025-Injection/" }
       ],
       "severity": "High",
       "confidence": 87,

@@ -52,7 +52,7 @@ th, td { border: 1px solid #e5e7eb; padding: 0.4rem 0.8rem; text-align: left; }
     <code>src/handlers/orders.py:41</code> ·
     rule <code>code-review.sqli.string-concat</code> ·
     confidence 87% ·
-    <a href="https://cwe.mitre.org/data/definitions/89.html">CWE CWE-89</a>, OWASP-Top10 A03:2021
+    <a href="https://cwe.mitre.org/data/definitions/89.html">CWE CWE-89</a>, <a href="https://owasp.org/Top10/2025/A05_2025-Injection/">OWASP-Top10 A05:2025</a>
   </p>
   <p><strong>Problem:</strong> User-supplied `request.params.id` is concatenated directly into a SQL query string.</p>
   <p><strong>Impact:</strong> An attacker can inject arbitrary SQL, potentially reading or modifying any data the database user can access.</p>

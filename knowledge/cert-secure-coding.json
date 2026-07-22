@@ -1,0 +1,3 @@
+{
+  "_note": "Intentionally empty for now. CERT Secure Coding rules are per-language (e.g. STR02-C, IDS00-J) and security-skill hasn't decided its detector language coverage yet (see plans/007-code-review-skill.md open question). Seed this once a language is chosen and a detector actually needs to cite a rule — don't pre-populate speculatively."
+}

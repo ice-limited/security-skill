@@ -1,0 +1,15 @@
+{
+  "_edition": "5.0.0",
+  "_note": "OWASP ASVS 5.0.0 (released 2025-05-30) — current as of 2026-07-22, structure changed significantly from 4.0.3 (14 chapters V1-V14 with different topics). Chapters V1-V11 confirmed against the standard's own JSON export; that export appeared to be truncated when fetched, so this list is NOT guaranteed complete — if a chapter beyond V11 is needed, verify against the official document (github.com/OWASP/ASVS/tree/master/5.0) before adding it here rather than guessing.",
+  "V1": { "title": "Encoding and Sanitization", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V2": { "title": "Validation and Business Logic", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V3": { "title": "Web Frontend Security", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V4": { "title": "API and Web Service", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V5": { "title": "File Handling", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V6": { "title": "Authentication", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V7": { "title": "Session Management", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V8": { "title": "Authorization", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V9": { "title": "Self-contained Tokens", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V10": { "title": "OAuth and OIDC", "url": "https://owasp.org/www-project-application-security-verification-standard/" },
+  "V11": { "title": "Cryptography", "url": "https://owasp.org/www-project-application-security-verification-standard/" }
+}

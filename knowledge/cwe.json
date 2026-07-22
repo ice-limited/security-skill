@@ -1,0 +1,19 @@
+{
+  "CWE-16": { "title": "Configuration" },
+  "CWE-20": { "title": "Improper Input Validation" },
+  "CWE-22": { "title": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')" },
+  "CWE-77": { "title": "Improper Neutralization of Special Elements used in a Command ('Command Injection')" },
+  "CWE-78": { "title": "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')" },
+  "CWE-79": { "title": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')" },
+  "CWE-89": { "title": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')" },
+  "CWE-200": { "title": "Exposure of Sensitive Information to an Unauthorized Actor" },
+  "CWE-306": { "title": "Missing Authentication for Critical Function" },
+  "CWE-362": { "title": "Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')" },
+  "CWE-502": { "title": "Deserialization of Untrusted Data" },
+  "CWE-601": { "title": "URL Redirection to Untrusted Site ('Open Redirect')" },
+  "CWE-668": { "title": "Exposure of Resource to Wrong Sphere" },
+  "CWE-798": { "title": "Use of Hard-coded Credentials" },
+  "CWE-862": { "title": "Missing Authorization" },
+  "CWE-915": { "title": "Improperly Controlled Modification of Dynamically-Determined Object Attributes" },
+  "CWE-918": { "title": "Server-Side Request Forgery (SSRF)" }
+}

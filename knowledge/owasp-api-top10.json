@@ -1,0 +1,44 @@
+{
+  "_edition": "2023",
+  "_note": "OWASP API Security Top 10 2023 — current edition as of 2026-07-22, no newer edition found. URL slugs verified against the live site (0xa1..0xa9, then 0xaa for the 10th item — hex-style numbering, not 0xa10).",
+  "API1:2023": {
+    "title": "Broken Object Level Authorization",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+  },
+  "API2:2023": {
+    "title": "Broken Authentication",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/"
+  },
+  "API3:2023": {
+    "title": "Broken Object Property Level Authorization",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/"
+  },
+  "API4:2023": {
+    "title": "Unrestricted Resource Consumption",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/"
+  },
+  "API5:2023": {
+    "title": "Broken Function Level Authorization",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/"
+  },
+  "API6:2023": {
+    "title": "Unrestricted Access to Sensitive Business Flows",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/"
+  },
+  "API7:2023": {
+    "title": "Server Side Request Forgery",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa7-server-side-request-forgery/"
+  },
+  "API8:2023": {
+    "title": "Security Misconfiguration",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/"
+  },
+  "API9:2023": {
+    "title": "Improper Inventory Management",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/"
+  },
+  "API10:2023": {
+    "title": "Unsafe Consumption of APIs",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0xaa-unsafe-consumption-of-apis/"
+  }
+}

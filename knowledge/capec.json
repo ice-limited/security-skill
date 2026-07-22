@@ -1,0 +1,6 @@
+{
+  "CAPEC-63": { "title": "Cross-Site Scripting (XSS)", "relatedCwe": ["CWE-79", "CWE-20"] },
+  "CAPEC-66": { "title": "SQL Injection", "relatedCwe": ["CWE-89"] },
+  "CAPEC-248": { "title": "Command Injection", "relatedCwe": ["CWE-77"] },
+  "CAPEC-664": { "title": "Server Side Request Forgery", "relatedCwe": ["CWE-918", "CWE-20"] }
+}

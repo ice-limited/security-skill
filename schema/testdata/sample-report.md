@@ -33,7 +33,7 @@ branch `feature/payments` · commit `a1b2c3d4`
 - **Location:** `src/handlers/orders.py:41`
 - **Rule:** `code-review.sqli.string-concat`
 - **Confidence:** 87%
-- **Reference:** [CWE CWE-89](https://cwe.mitre.org/data/definitions/89.html), OWASP-Top10 A03:2021
+- **Reference:** [CWE CWE-89](https://cwe.mitre.org/data/definitions/89.html), [OWASP-Top10 A05:2025](https://owasp.org/Top10/2025/A05_2025-Injection/)
 
 **Problem:** User-supplied `request.params.id` is concatenated directly into a SQL query string.
 
