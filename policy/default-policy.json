@@ -1,0 +1,10 @@
+{
+  "policyVersion": "1.0.0",
+  "actions": {
+    "Critical": "block-merge",
+    "High": "require-review",
+    "Medium": "create-ticket",
+    "Low": "notify",
+    "Info": "none"
+  }
+}

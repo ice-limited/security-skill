@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cpmatch:security-skill:schema:policy:1.0.0",
+  "title": "Policy",
+  "description": "Severity-to-action mapping. See plans/003-policy-engine.md and meetings/2026-07-22-1214-plan-003-kickoff.md in the security-skill-workspace repo for design rationale. A policy is always complete (all 5 severities mapped) — there is no partial/deep-merge override, only wholesale replacement (see policy/README.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policyVersion", "actions"],
+  "properties": {
+    "policyVersion": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Version of this policy schema (semver). Bump when the shape changes in a breaking way."
+    },
+    "actions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Critical", "High", "Medium", "Low", "Info"],
+      "properties": {
+        "Critical": { "$ref": "#/$defs/action" },
+        "High": { "$ref": "#/$defs/action" },
+        "Medium": { "$ref": "#/$defs/action" },
+        "Low": { "$ref": "#/$defs/action" },
+        "Info": { "$ref": "#/$defs/action" }
+      },
+      "description": "Every severity from finding.schema.json's severity enum must be mapped — no silent gaps. Fail loud (schema-invalid) rather than guess a default for a missing severity."
+    }
+  },
+  "$defs": {
+    "action": {
+      "type": "string",
+      "enum": ["block-merge", "require-review", "create-ticket", "notify", "none"],
+      "description": "Fixed action set for v1, matching CONTEXT.md §9 plus 'none' for Info-level findings that shouldn't do anything."
+    }
+  }
+}
