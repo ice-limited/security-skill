@@ -54,6 +54,12 @@ adapters/          Per-tool entry points. claude-code/ (017),
                    agents-md/ (018, Codex/OpenCode/Cursor), antigravity/
                    and grok-build/ (019, both reuse 017/018's content —
                    see README.md in each directory) all done.
+run_all_tests.py   Cross-sub-skill evaluation harness (plan 020) — runs
+                   every test_*.py in the repo, one command.
+docs/              Cross-cutting reference docs not owned by one
+                   directory. testing-standards.md (plan 020) documents
+                   the fixture/mocking/mutation-testing conventions
+                   every sub-skill already follows.
 detectors/         Detection rules per sub-skill (code review, dependency,
                    iac, kubernetes, docker, api, secret, supply-chain) —
                    one subdirectory per sub-skill, each following the
@@ -155,27 +161,27 @@ this. Examples already in use: `secret.aws-access-key`,
 
 ## Running the tests
 
-macOS/Linux (`bash`/`zsh`):
+**Run everything at once**: `python3 run_all_tests.py` (plan 020) —
+discovers and runs every `test_*.py` in the repo, reports a
+per-directory pass/fail/skip summary, and exits non-zero only on a
+real failure (a skip because a real external tool isn't on `PATH` never
+fails the run). Prefers this repo's own `.venv` if present. This
+replaced a manually-curated, per-directory command list that had
+already drifted out of date (missing `action/`, `policy/`, `decision/`,
+`adapters/*/` entirely by the time this was noticed) — see
+`docs/testing-standards.md` and `plans/020-test-fixtures-evaluation-corpus.md`.
+
+To focus on one directory instead (macOS/Linux, `bash`/`zsh`):
 
 ```
-cd common && python3 -m unittest test_common -v
-cd common && python3 -m unittest test_semgrep_wrapper -v   # requires real `semgrep` on PATH for its subprocess tests (skipped, not failed, if absent)
-cd common && python3 -m unittest test_trivy_wrapper -v   # requires real `trivy` on PATH for its subprocess tests (skipped, not failed, if absent)
-cd ../schema && pip install -r requirements.txt && python3 -m unittest test_renderers -v
-cd ../knowledge && python3 -m unittest test_knowledge -v
-cd ../knowledge && python3 -m unittest test_check_freshness -v      # mocked, no network
-cd ../knowledge && RUN_LIVE_TESTS=1 python3 -m unittest test_check_freshness -v   # hits real GitHub API
-cd ../policy && python3 -m unittest test_engine -v
-cd ../decision && python3 -m unittest test_decision -v
-cd ../detectors/secret && python3 -m unittest test_scanner -v
-cd ../code-review && pip install -r requirements.txt && python3 -m unittest test_scanner -v   # requires real `semgrep` on PATH + network for its registry config
-cd ../dependency && python3 -m unittest test_scanner -v   # requires real `osv-scanner` on PATH + network to query OSV
-cd ../docker && python3 -m unittest test_scanner -v   # requires real `trivy` on PATH + network for its checks bundle
-cd ../auth && python3 -m unittest test_playbook -v
-cd ../auth && python3 -m unittest test_semgrep_detector -v
-cd ../kubernetes && python3 -m unittest test_scanner -v   # requires real `trivy` on PATH + network for its checks bundle; Helm-specific tests also require real `helm` on PATH
-cd ../iac && pip install -r requirements.txt && python3 -m unittest test_scanner -v   # requires real `checkov` on PATH
+cd detectors/secret && python3 -m unittest test_scanner -v
 ```
+
+Every directory's own `README.md` documents that directory's specific
+prerequisites (which real external CLI it needs, if any) and its own
+cross-platform verification command. `RUN_LIVE_TESTS=1` additionally
+opts `knowledge/test_check_freshness.py` into hitting the real GitHub
+API instead of staying mocked.
 
 Windows: use `python` (not `python3` — not a standard command name on
 Windows installs) and the shell-appropriate env var syntax for the one

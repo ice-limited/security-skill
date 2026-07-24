@@ -84,6 +84,14 @@ rule existed).
   stderr reconfiguration).
 - **023 — AuthN/AuthZ Code Review Skill**: Semgrep-subset (JWT bypass) +
   playbook hybrid (`detectors/auth/`).
+- **020 — Test Fixtures & Evaluation Corpus**: retrofit, not a
+  from-scratch build — Phase 1 already shipped its own inline synthetic
+  fixtures per sub-skill without this plan. Added
+  `run_all_tests.py` (discovers and runs every `test_*.py` in the repo,
+  one command, per-directory pass/fail/skip summary, skips never fail
+  the run) and `docs/testing-standards.md` (formalizes the fixture/
+  mocking/mutation-testing conventions that already existed in
+  practice).
 
 ### Fixed
 
@@ -93,9 +101,21 @@ rule existed).
   the narrower capture group, producing an over-wide (and, downstream,
   incorrect) byte span. Fixed at the source in
   `detectors/secret/scanner.py`, with regression tests.
+- **Environment gap, found while building 020's evaluation harness**:
+  `common/test_checkov_wrapper.py` and `detectors/iac/test_scanner.py`
+  mock `subprocess.run` for their own output-normalization tests, but
+  still call the real `_check_checkov_available()` gate first, which
+  checks the real `PATH` — so they failed (not skipped) in any shell
+  that hadn't manually activated this repo's `.venv`. Not a code bug;
+  fixed in `run_all_tests.py` by prepending `.venv/bin` to the
+  subprocess environment's `PATH`, the same thing `source
+  .venv/bin/activate` would do. Documented as a known rough edge in
+  `docs/testing-standards.md` for anyone running those two files
+  directly outside the harness.
 
 ### Not yet implemented
 
-- **019 — Antigravity/Grok Build Adapter**, **020 — Test Fixtures &
-  Evaluation Corpus**, **024 — Race Condition Code Review Skill** — all
-  still `todo`, see `plans/` in the workspace repo for current status.
+- **019 — Antigravity/Grok Build Adapter** is actually done — this line
+  wasn't updated when that plan shipped; fixed here.
+- **024 — Race Condition Code Review Skill** — still `todo`, see
+  `plans/` in the workspace repo for current status.
