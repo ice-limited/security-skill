@@ -62,6 +62,11 @@ rule existed).
 - **017 — Claude Code Adapter**: `adapters/claude-code/security-review/`
   — a router Skill + one reference doc per sub-skill, using Claude
   Code's progressive-disclosure mechanism.
+- **018 — AGENTS.md Adapter**: `adapters/agents-md/AGENTS.md` — one
+  flat entry point for Codex/OpenCode/Cursor. Real research confirmed
+  Cursor reads `AGENTS.md` natively in Agent mode, so `.cursor/rules/*.mdc`
+  was deferred rather than built (a genuine future enhancement, not a
+  gap this plan needed to close).
 - **021 — Knowledge Base Freshness Checker**: verifies `knowledge/`
   reference data against upstream sources (`knowledge/check_freshness.py`).
 - **022 — Cross-Platform Compatibility**: audited and fixed macOS/
@@ -82,7 +87,6 @@ rule existed).
 
 ### Not yet implemented
 
-- **018 — AGENTS.md Adapter**, **019 — Antigravity/Grok Build Adapter**,
-  **020 — Test Fixtures & Evaluation Corpus**, **024 — Race Condition
-  Code Review Skill** — all still `todo`, see `plans/` in the workspace
-  repo for current status.
+- **019 — Antigravity/Grok Build Adapter**, **020 — Test Fixtures &
+  Evaluation Corpus**, **024 — Race Condition Code Review Skill** — all
+  still `todo`, see `plans/` in the workspace repo for current status.
