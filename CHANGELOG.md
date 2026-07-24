@@ -14,6 +14,14 @@ rule existed).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-25
+
+All 24 plans in the security-skill-workspace roadmap are `done` as of
+this release — Detection Layer (10 sub-skills, plans 006-014/023/024),
+Decision Layer (004), Policy Engine (003), Action Layer (015-016),
+three AI-agent adapters (017-019), the cross-sub-skill test harness
+(020), and cross-platform compatibility (022). 674 tests, 0 failures.
+
 ### Added
 
 - **License** — Business Source License 1.1-style source-available
