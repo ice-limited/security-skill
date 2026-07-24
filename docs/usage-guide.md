@@ -24,6 +24,21 @@ plain CLI you can run yourself, which is what this guide covers).
 
 ## 2. Setup
 
+**Fastest path**: run this repo's own install script — discovers and
+installs every real `requirements.txt` in the repo, runs `npm install`
+for `detectors/api/`, and reports which optional external tools are
+and aren't on `PATH`:
+
+```
+./install.sh              # macOS/Linux
+.\install.ps1              # Windows PowerShell / PowerShell Core
+install.bat                # Windows cmd.exe
+```
+
+The manual steps below are exactly what those scripts automate — read
+on if you want to do it by hand, or just need to know which package a
+given detector needs.
+
 ### 2.1 Python environment
 
 Every module is pure Python 3, callable as a script with no
@@ -31,10 +46,11 @@ packaging/install step (no `pyproject.toml`, no `pip install .`) — just
 clone and run. Some detectors need extra packages:
 
 ```
-pip install -r schema/requirements.txt        # jsonschema, referencing — needed by every schema-validating module
+pip install -r schema/requirements.txt                  # jsonschema, referencing — needed by every schema-validating module
 pip install -r detectors/code-review/requirements.txt   # semgrep
 pip install -r detectors/iac/requirements.txt           # checkov
 pip install -r detectors/api/requirements.txt           # PyYAML, ruamel.yaml
+pip install -r detectors/supply-chain/requirements.txt  # ruamel.yaml
 ```
 
 Recommended: one venv at the repo root (`python3 -m venv .venv`) with

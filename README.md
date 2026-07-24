@@ -16,7 +16,7 @@ the AI-agent adapters, running the test suite) — ภาษาไทย:
 [`docs/usage-guide.th.md`](docs/usage-guide.th.md). The short version:
 
 ```
-pip install -r schema/requirements.txt
+./install.sh                                          # or install.ps1 / install.bat on Windows
 python3 detectors/secret/scanner.py path/to/file.py   # -> a JSON array of Finding objects
 python3 run_all_tests.py                              # run the whole test suite, one command
 ```

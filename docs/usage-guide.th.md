@@ -21,6 +21,19 @@ detector ก็เป็น CLI ธรรมดาที่คุณรันเ
 
 ## 2. การติดตั้ง (Setup)
 
+**ทางลัดที่เร็วที่สุด**: รัน install script ของ repo นี้เอง — จะค้นหาและติดตั้ง
+`requirements.txt` จริงทุกไฟล์ใน repo, รัน `npm install` ให้ `detectors/api/`,
+และรายงานว่าเครื่องมือภายนอกตัวไหนมี/ไม่มีบน `PATH`:
+
+```
+./install.sh              # macOS/Linux
+.\install.ps1              # Windows PowerShell / PowerShell Core
+install.bat                # Windows cmd.exe
+```
+
+ขั้นตอนแบบ manual ด้านล่างคือสิ่งที่ script เหล่านี้ทำให้อัตโนมัตินั่นเอง —
+อ่านต่อถ้าอยากทำเองทีละขั้น หรือแค่อยากรู้ว่า detector ตัวไหนต้องการ package อะไร
+
 ### 2.1 Python environment
 
 ทุกโมดูลเป็น Python 3 ล้วนๆ เรียกใช้เป็น script ได้เลยโดยไม่ต้องมีขั้นตอน
@@ -28,10 +41,11 @@ packaging/install (ไม่มี `pyproject.toml`, ไม่ต้อง `pip 
 แล้วรันได้ทันที บาง detector ต้องการ package เพิ่มเติม:
 
 ```
-pip install -r schema/requirements.txt        # jsonschema, referencing — ทุกโมดูลที่ validate schema ต้องใช้
+pip install -r schema/requirements.txt                  # jsonschema, referencing — ทุกโมดูลที่ validate schema ต้องใช้
 pip install -r detectors/code-review/requirements.txt   # semgrep
 pip install -r detectors/iac/requirements.txt           # checkov
 pip install -r detectors/api/requirements.txt           # PyYAML, ruamel.yaml
+pip install -r detectors/supply-chain/requirements.txt  # ruamel.yaml
 ```
 
 แนะนำ: สร้าง venv เดียวที่ root ของ repo (`python3 -m venv .venv`) แล้ว

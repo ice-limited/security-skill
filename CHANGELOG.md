@@ -14,6 +14,28 @@ rule existed).
 
 ## [Unreleased]
 
+### Added
+
+- **`install.sh` / `install.ps1` / `install.bat`** — one-command setup
+  for macOS/Linux, Windows PowerShell, and Windows cmd.exe. Discovers
+  and installs every real `requirements.txt` in the repo dynamically
+  (not a hardcoded list — a static list has already gone stale twice in
+  this project's own history), runs `npm install` for `detectors/api/`
+  if Node.js is present, and reports which optional external tools
+  (semgrep/trivy/checkov/osv-scanner/scorecard/helm) are and aren't on
+  `PATH` with the install hint for each. Verified for real:
+  `install.sh` was run end-to-end in this environment (fresh `.venv`,
+  all 5 real `requirements.txt` installed, `run_all_tests.py` passing
+  against the result) — `install.ps1`/`install.bat` were reviewed
+  carefully but not executed (no Windows/PowerShell Core available in
+  this environment); both add explicit UTF-8 console handling so the
+  Thai text in their output doesn't depend on the host's default
+  codepage, the same discipline this project's own Python CLIs follow.
+- Fixed a real, small documentation gap found while writing the install
+  scripts: `detectors/supply-chain/requirements.txt` (needs
+  `ruamel.yaml`) was missing from `docs/usage-guide.md`/`.th.md`'s
+  setup section — added.
+
 ## [1.0.0] - 2026-07-25
 
 All 24 plans in the security-skill-workspace roadmap are `done` as of
