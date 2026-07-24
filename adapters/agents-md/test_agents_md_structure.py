@@ -51,6 +51,7 @@ _EXPECTED_COMMAND_FRAGMENT = {
     "api": "detectors/api/scanner.py",
     "supply-chain": "detectors/supply-chain/scanner.py",
     "cicd-pipeline": "detectors/cicd/scanner.py",
+    "race-condition": "detectors/race-condition/playbook.py",
 }
 
 

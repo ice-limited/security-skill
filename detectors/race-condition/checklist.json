@@ -1,0 +1,103 @@
+{
+  "items": [
+    {
+      "ruleId": "race-condition.toctou-file-existence-then-open",
+      "weaknessClass": "toctou",
+      "title": "File existence checked, then opened non-atomically",
+      "guidance": "Look for code that checks whether a file exists/is absent (e.g. os.path.exists(), os.path.isfile(), a shell 'test -f'/'[ -f ]') and then, in a separate later step, opens or creates that same path assuming the check's result still holds — instead of using a single atomic open-with-create-exclusive call that checks and acts in one syscall. Between the check and the open, another process (or an attacker who influences a shared/world-writable directory) can create, replace, or symlink the path.",
+      "evidenceRequirement": "Show the existence check and the later open/create call operating on the same path string, with no atomic exclusive-create flag (e.g. Python's os.O_CREAT | os.O_EXCL or open(path, 'x'), C's O_EXCL, Node's 'wx' flag) used instead.",
+      "languageNotes": {
+        "python": "The vulnerable shape: 'if not os.path.exists(path): open(path, \"w\")'. The fix: open(path, \"x\") (or os.open(path, os.O_CREAT | os.O_EXCL)), which raises FileExistsError atomically instead of checking first.",
+        "javascript": "Node's fs.existsSync(path) followed by fs.writeFileSync(path, ...) is the vulnerable shape. fs.writeFileSync(path, ..., {flag: 'wx'}) (or fs.open with 'wx') is atomic.",
+        "shell": "'[ -f \"$path\" ] || touch \"$path\"' or 'test -e \"$path\" || echo ... > \"$path\"' is the vulnerable shape in a shell script — 'set -o noclobber' plus '>' redirection, or 'ln' (which is atomic), are the safer patterns depending on what's actually needed.",
+        "go": "os.Stat(path) (or os.IsNotExist(err)) followed by os.Create(path) is the vulnerable shape. os.OpenFile(path, os.O_CREATE|os.O_EXCL, perm) is atomic.",
+        "java": "Files.exists(path) followed by Files.createFile(path) is the vulnerable shape (createFile itself already throws FileAlreadyExistsException atomically if used alone, without a preceding exists() check)."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-367" },
+        { "standard": "CWE", "id": "CWE-362" }
+      ],
+      "suggestedSeverity": "Medium",
+      "confidenceGuidance": {
+        "defaultMax": 65,
+        "rationale": "The pattern (a check call followed by an act call on the same path with no atomic alternative used) is fairly mechanical to spot, but whether the gap is actually exploitable depends on whether the containing directory is genuinely shared/attacker-influenced — an agent reading the code in isolation can't always confirm that, so confidence stays capped below what a deterministic detector could claim for a fully-corroborated pattern."
+      },
+      "problemTemplate": "{file}:{line} checks whether {resourceType} exists, then opens/creates it in a separate, non-atomic step ({call}).",
+      "impactTemplate": "If another process or an attacker with write access to the containing directory acts on {resourceType} between the check and the open, this code can end up operating on a file it didn't expect — e.g. following a symlink planted in the gap, or overwriting/reading content it didn't create.",
+      "recommendationTemplate": "Replace the check-then-open with a single atomic exclusive-create call ({atomicAlternative}), so the existence check and the open happen as one operation the OS itself guarantees is race-free."
+    },
+    {
+      "ruleId": "race-condition.toctou-permission-check-then-use",
+      "weaknessClass": "toctou",
+      "title": "Access/permission checked, then file used via a separate open",
+      "guidance": "Look for code that explicitly checks a file's permissions or accessibility (e.g. os.access(), a stat() call inspecting mode bits) and then, in a separate later step, opens/uses that same path — rather than simply attempting the open/operation directly and handling the resulting permission error. This is the canonical CWE-367 access()-then-open() pattern, explicitly warned against in multiple languages' own documentation (e.g. Python's os.access() docstring) because the file's permissions, ownership, or identity can change between the check and the use.",
+      "evidenceRequirement": "Show the explicit access/permission check and the later open/use call on the same path, with no indication the check result is otherwise required (e.g. for a message shown to the user) rather than as a gate before acting.",
+      "languageNotes": {
+        "python": "os.access(path, os.W_OK) (or R_OK/X_OK) followed by open(path, ...) is the textbook vulnerable shape — Python's own documentation for os.access() explicitly warns it's 'a security hole' for exactly this reason. The fix is to attempt the operation directly and catch PermissionError.",
+        "c": "access(path, W_OK) followed by open(path, ...) is the pattern this checklist item is originally named for (the classic Unix TOCTOU example) — setreuid/setuid programs are especially at risk since access() checks the real uid, not the effective one used by the later open().",
+        "shell": "'[ -w \"$path\" ] && cat >> \"$path\"' or similar test-then-write shapes in a script running with elevated privileges."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-367" },
+        { "standard": "CWE", "id": "CWE-362" }
+      ],
+      "suggestedSeverity": "Medium",
+      "confidenceGuidance": {
+        "defaultMax": 70,
+        "rationale": "This is the most textbook, well-documented TOCTOU shape (multiple languages' own docs warn against it directly) — slightly higher confidence ceiling than the more varied file-existence item, since there's less ambiguity about whether the pattern itself is the known-bad one."
+      },
+      "problemTemplate": "{file}:{line} checks {resourceType}'s permissions/accessibility via {call}, then opens/uses it in a separate step.",
+      "impactTemplate": "The permission/ownership state of {resourceType} can change between the check and the use (e.g. via a symlink swap or a concurrent chmod/chown), so the check does not actually guarantee the later operation is safe or permitted — this is the specific pattern multiple languages' own standard library documentation warns against by name.",
+      "recommendationTemplate": "Remove the separate access/permission check and instead attempt the operation directly, handling the permission error it raises if the caller genuinely lacks access — the OS's own permission enforcement on the actual operation is inherently race-free, unlike a preceding check."
+    },
+    {
+      "ruleId": "race-condition.toctou-stat-then-operate-on-path",
+      "weaknessClass": "toctou",
+      "title": "File type/identity checked via stat, then re-referenced by path instead of by descriptor",
+      "guidance": "Look for code that calls stat()/lstat() (or a language equivalent) on a path to confirm something about it — that it's a regular file and not a symlink, that it belongs to a particular owner, that its size/mtime match an expectation — and then performs a further operation by re-opening or re-referencing the *same path string* again, rather than continuing to operate on the already-open file descriptor/handle the stat (or an fstat on an already-open handle) was really about. Between the stat-by-path and the later re-open-by-path, the path can be swapped to point somewhere else entirely (a symlink attack).",
+      "evidenceRequirement": "Show the stat/lstat call and the later operation both referencing the same path string (not a file descriptor/handle carried over from an already-open file), and confirm the code isn't already using the safer O_NOFOLLOW/fstat-on-open-handle pattern.",
+      "languageNotes": {
+        "python": "os.path.islink(path)/os.stat(path) followed by a later open(path, ...) is the vulnerable shape, especially if the check was specifically meant to reject symlinks — open the file first, then use os.fstat(fd) on the resulting file descriptor to check its properties, rather than stat-then-open.",
+        "go": "os.Lstat(path) followed by a later os.Open(path) has the same gap — prefer opening first (optionally with O_NOFOLLOW-equivalent flags) and inspecting the resulting *os.File via Stat() on the handle.",
+        "c": "lstat(path, &st) followed by open(path, ...) is the classic symlink-race shape this item is modeled on — open(path, O_NOFOLLOW) first, then fstat() on the resulting descriptor, avoids the gap entirely."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-367" },
+        { "standard": "CWE", "id": "CWE-362" }
+      ],
+      "suggestedSeverity": "Medium",
+      "confidenceGuidance": {
+        "defaultMax": 55,
+        "rationale": "Distinguishing 'this stat-then-reopen is exploitable' from 'this is a harmless, already-trusted path with no attacker-controlled directory in play' genuinely requires judgment about the surrounding context an agent reading one function often can't fully establish — keep this the most conservative confidence ceiling of the three."
+      },
+      "problemTemplate": "{file}:{line} inspects {resourceType} via {call} and then re-references the same path in a later operation instead of continuing to use an already-open handle.",
+      "impactTemplate": "If the path can be swapped (e.g. via a symlink planted by another process with write access to the containing directory) between the stat and the later re-open, the later operation can act on a completely different file than the one that was actually checked — potentially reading, writing, or executing something unintended.",
+      "recommendationTemplate": "Open {resourceType} first (with a no-follow-symlink flag if that's the intent), then perform any type/ownership/size checks on the resulting open file descriptor/handle via fstat-equivalent, rather than stat-by-path followed by a separate re-open-by-path."
+    },
+    {
+      "ruleId": "race-condition.toctou-predictable-temp-path",
+      "weaknessClass": "toctou",
+      "title": "Predictable temporary file/directory path checked or assumed unique, then created",
+      "guidance": "Look for code that constructs a 'temporary' file or directory path using a predictable name (a fixed name, a name derived only from the PID, or a simple counter) in a shared/world-writable location, then either checks it doesn't already exist or simply assumes uniqueness before creating it — instead of using the platform's dedicated secure-temp-file API, which generates an unpredictable name and creates it atomically in one step.",
+      "evidenceRequirement": "Show the temp path being constructed from a predictable component (not a cryptographically-random suffix generated by a dedicated temp-file API) and confirm the containing directory is shared/world-writable (e.g. /tmp or an equivalent), not a directory already private to this process/user.",
+      "languageNotes": {
+        "python": "Manually building a path like f'/tmp/myapp-{os.getpid()}.tmp' and then open()-ing it is the vulnerable shape — tempfile.mkstemp()/NamedTemporaryFile() generate an unpredictable name and create the file atomically (O_CREAT | O_EXCL under the hood) in one call.",
+        "shell": "'tmpfile=\"/tmp/myscript.$$\"' (using the shell PID, which is predictable/guessable) followed by writing to it is the classic shell-script vulnerable shape — 'mktemp' is the safe alternative.",
+        "go": "Manually joining os.TempDir() with a fixed or predictable name is the vulnerable shape — os.CreateTemp() (formerly ioutil.TempFile()) is the atomic, unpredictable-name equivalent.",
+        "java": "new File(tmpDir, \"myapp.tmp\") followed by createNewFile() is the vulnerable shape if the name is fixed/predictable — Files.createTempFile() is the safe equivalent."
+      },
+      "references": [
+        { "standard": "CWE", "id": "CWE-367" },
+        { "standard": "CWE", "id": "CWE-362" }
+      ],
+      "suggestedSeverity": "Medium",
+      "confidenceGuidance": {
+        "defaultMax": 60,
+        "rationale": "Confirming the containing directory is genuinely shared/world-writable (vs. a directory already private to this process) requires context an agent reading one function may not fully have — kept in the same conservative range as the other file-resource items in this checklist."
+      },
+      "problemTemplate": "{file}:{line} constructs a predictable temporary path for {resourceType} and creates it directly, instead of using the platform's secure temp-file API.",
+      "impactTemplate": "An attacker who can predict or guess the temp path (and has write access to the shared directory it lives in) can pre-create it — e.g. as a symlink to a sensitive file — so that this code ends up reading from or writing to an unintended location once it 'creates' the path it assumed was unique.",
+      "recommendationTemplate": "Use the language/platform's dedicated secure-temp-file API (e.g. Python's tempfile.mkstemp(), the shell's mktemp, Go's os.CreateTemp(), Java's Files.createTempFile()) instead of constructing a predictable path manually — these generate an unpredictable name and create the file atomically in one step."
+    }
+  ]
+}

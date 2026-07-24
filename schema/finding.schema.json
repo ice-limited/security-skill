@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:cpmatch:security-skill:schema:finding:1.2.0",
+  "$id": "urn:cpmatch:security-skill:schema:finding:1.3.0",
   "title": "Finding",
   "description": "Canonical shape for a single security finding, emitted by any security-skill detector. See plans/001-finding-schema-output.md and meetings/2026-07-22-1056-plan-001-kickoff.md in the security-skill-workspace repo for design rationale.",
   "type": "object",
@@ -44,9 +44,10 @@
         "iac",
         "api",
         "supply-chain",
-        "cicd-pipeline"
+        "cicd-pipeline",
+        "race-condition"
       ],
-      "description": "Which sub-skill produced this finding. 'auth' added in schemaVersion 1.1.0 (plan 023 kickoff, 2026-07-22) — Broken AuthN/AuthZ split off from 'code-review' into its own plan-tracked sub-skill rather than reusing that value, since CONTEXT.md's split decision treats it as distinct enough to want independent policy/reporting grouping. 'cicd-pipeline' added in schemaVersion 1.2.0 (plan 013 implementation, 2026-07-22) — CI/CD Pipeline Skill, per that plan's own kickoff note reserved here in advance."
+      "description": "Which sub-skill produced this finding. 'auth' added in schemaVersion 1.1.0 (plan 023 kickoff, 2026-07-22) — Broken AuthN/AuthZ split off from 'code-review' into its own plan-tracked sub-skill rather than reusing that value, since CONTEXT.md's split decision treats it as distinct enough to want independent policy/reporting grouping. 'cicd-pipeline' added in schemaVersion 1.2.0 (plan 013 implementation, 2026-07-22) — CI/CD Pipeline Skill, per that plan's own kickoff note reserved here in advance. 'race-condition' added in schemaVersion 1.3.0 (plan 024 reopening kickoff, 2026-07-25) — Race Condition Code Review Skill, split off from 'code-review' at 007's own kickoff (2026-07-22), scoped to TOCTOU-shaped file/resource access only."
     },
     "artifactType": {
       "type": "string",

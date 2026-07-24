@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://security-skill.cpmatch.internal/detectors/race-condition/checklist.schema.json",
+  "title": "Race Condition Playbook Checklist",
+  "description": "One entry per weakness pattern the invoking AI agent should look for when reviewing code for TOCTOU-shaped file/resource access (plan 024). Scoped to TOCTOU only for v1 (narrowed at this plan's reopening kickoff, 2026-07-25) — not general check-then-act on arbitrary shared state, non-atomic read-modify-write, or missing-lock patterns. Playbook-only, no deterministic scanner: semgrep registry coverage for race conditions/TOCTOU was checked at this plan's original kickoff (2026-07-22) and found close to zero registry-wide, so unlike 007/023/013's hybrids there is no real deterministic coverage worth wrapping. A finding the agent produces from an item here must still conform to finding.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/checklistItem" }
+    }
+  },
+  "$defs": {
+    "checklistItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ruleId",
+        "weaknessClass",
+        "title",
+        "guidance",
+        "evidenceRequirement",
+        "references",
+        "suggestedSeverity",
+        "confidenceGuidance",
+        "problemTemplate",
+        "impactTemplate",
+        "recommendationTemplate"
+      ],
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$",
+          "description": "The ruleId the agent must stamp on any finding.schema.json finding it produces from this item — same naming convention as every other sub-skill (e.g. 'race-condition.toctou-file-existence-then-open')."
+        },
+        "weaknessClass": {
+          "type": "string",
+          "enum": ["toctou"],
+          "description": "A single value for v1, since scope is TOCTOU-only — kept as an enum (not a hardcoded literal in the description alone) so a future revision widening scope beyond TOCTOU (e.g. adding a 'non-atomic-read-modify-write' class) doesn't need a breaking schema change, just a new enum value."
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "guidance": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Concrete instruction to the agent on what to look for in the code — not a restatement of the CWE definition."
+        },
+        "evidenceRequirement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What counts as sufficient evidence before reporting this as a finding, not a suspicion — same evidentiary-rigor bar 023's checklist already established."
+        },
+        "languageNotes": {
+          "type": "object",
+          "description": "Optional per-language/framework idioms to check for. Not required for every item — the core guidance is language-agnostic; this only adds concrete, language-specific things to grep for.",
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["standard", "id"],
+            "properties": {
+              "standard": {
+                "type": "string",
+                "enum": [
+                  "OWASP-Top10",
+                  "OWASP-ASVS",
+                  "OWASP-API-Top10",
+                  "CWE",
+                  "CAPEC",
+                  "MITRE-ATTACK",
+                  "NIST-SSDF",
+                  "CERT-Secure-Coding"
+                ]
+              },
+              "id": { "type": "string", "minLength": 1 }
+            }
+          },
+          "description": "Same shape as finding.schema.json's references[] — reused directly so an agent-produced finding's references can be copied straight from here."
+        },
+        "suggestedSeverity": {
+          "type": "string",
+          "enum": ["Critical", "High", "Medium", "Low", "Info"],
+          "description": "A default suggestion, not a hard rule — TOCTOU impact varies by what the raced resource actually is. The agent may adjust based on context, but must not adjust silently: see confidenceGuidance."
+        },
+        "confidenceGuidance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["defaultMax", "rationale"],
+          "properties": {
+            "defaultMax": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Upper bound the agent should self-report for a playbook-derived finding of this item, absent stronger corroboration — deliberately lower than a deterministic detector's typical confidence."
+            },
+            "rationale": { "type": "string", "minLength": 1 }
+          }
+        },
+        "problemTemplate": { "type": "string", "minLength": 1 },
+        "impactTemplate": { "type": "string", "minLength": 1 },
+        "recommendationTemplate": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

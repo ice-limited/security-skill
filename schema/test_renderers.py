@@ -45,7 +45,7 @@ def _minimal_report(findings: list[dict]) -> dict:
     for f in findings:
         counts[f["severity"].lower()] += 1
     return {
-        "schemaVersion": "1.2.0",
+        "schemaVersion": "1.3.0",
         "scanId": "scan-min",
         "repository": "example/repo",
         "timestamp": "2026-07-22T00:00:00Z",

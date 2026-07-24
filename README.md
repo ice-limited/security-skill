@@ -95,6 +95,13 @@ detectors/         Detection rules per sub-skill (code review, dependency,
                      for JWT signature/algorithm bypass, the one
                      pattern Semgrep covers well here). Both halves
                      implemented. See README.md in this directory.
+  race-condition/    TOCTOU-shaped file/resource access only (plan 024)
+                     — playbook-only, no deterministic scanner (Semgrep's
+                     registry coverage for race conditions/TOCTOU was
+                     checked and found close to zero registry-wide, so
+                     there's nothing real to wrap). Scoped narrower than
+                     "race conditions" in general at this plan's
+                     reopening kickoff — see README.md in this directory.
   kubernetes/        Workload hardening: hostNetwork/hostPID/hostPath,
                      privileged/root containers, unpinned `:latest`
                      tags, missing CPU/memory limits, writable root

@@ -67,7 +67,7 @@ named, or a full-repo scan if asked for one). Match extensions/paths to
 | `Jenkinsfile` | jenkinsfile | CI/CD Pipeline | `reference/cicd-pipeline.md` |
 | package manifests/lockfiles | package-lock | Dependency | `reference/dependency.md` |
 | OpenAPI/other API specs | api-spec | API | `reference/api.md` |
-| Application source code | source-code | Code Review, Auth, API (open redirect) | `reference/code-review.md`, `reference/auth.md` |
+| Application source code | source-code | Code Review, Auth, Race Condition (TOCTOU), API (open redirect) | `reference/code-review.md`, `reference/auth.md`, `reference/race-condition.md` |
 | Any file, any type | (all of the above) | Secret | `reference/secret.md` — always run this one; secrets can leak into any file type |
 
 A single review often spans several rows — run every detector that

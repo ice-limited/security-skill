@@ -92,6 +92,18 @@ rule existed).
   the run) and `docs/testing-standards.md` (formalizes the fixture/
   mocking/mutation-testing conventions that already existed in
   practice).
+- **024 — Race Condition Code Review Skill**: reopened and implemented
+  (originally deferred past Phase 1 at its 2026-07-22 kickoff over
+  near-zero Semgrep registry coverage for race conditions/TOCTOU; the
+  user explicitly overrode the unmet revisit condition and asked to
+  proceed on 2026-07-25). `detectors/race-condition/` — playbook-only,
+  no deterministic scanner, scoped to TOCTOU-shaped file/resource
+  access only (narrower than general race conditions). Added `CWE-367`
+  to `knowledge/cwe.json`. `finding.schema.json`'s `subSkill` enum
+  gained `race-condition` (schemaVersion 1.2.0 → 1.3.0). Also updated
+  the Claude Code (017) and AGENTS.md (018) adapters' own coverage for
+  this new sub-skill — their own coverage-guard tests correctly caught
+  the gap the moment the new subSkill enum value existed.
 
 ### Fixed
 
@@ -115,7 +127,11 @@ rule existed).
 
 ### Not yet implemented
 
-- **019 — Antigravity/Grok Build Adapter** is actually done — this line
-  wasn't updated when that plan shipped; fixed here.
-- **024 — Race Condition Code Review Skill** — still `todo`, see
-  `plans/` in the workspace repo for current status.
+- **018 (AGENTS.md Adapter), 019 (Antigravity/Grok Build Adapter), 020
+  (Test Fixtures), 024 (Race Condition)** are all now `done` — all
+  plans in `plans/` (workspace repo) are `done` except **019's own
+  `.cursor/rules/*.mdc`** (deferred, not built — see 018/019's own
+  entries above), **020's OWASP Benchmark/WebGoat corpus adoption**
+  (deferred, not pursued), and **024's beyond-TOCTOU scope** (deferred,
+  not pursued). See `plans/` in the workspace repo for current status
+  of anything not covered by an entry above.

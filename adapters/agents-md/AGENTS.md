@@ -48,6 +48,7 @@ what else applies** — secrets can leak into any file type.
 | Any file, any type | Secret | `python3 detectors/secret/scanner.py <file> [--artifact-type ...]` | none |
 | Application source code | Code Review | `python3 detectors/code-review/scanner.py <file_or_dir> [--config p/owasp-top-ten]` | `semgrep` (`pip install semgrep`) |
 | Application source code (authn/authz) | Auth | `python3 detectors/auth/semgrep_detector.py <file_or_dir>` (deterministic JWT-bypass half) **and** `python3 detectors/auth/playbook.py --language <lang>` (playbook half — see note below) | `semgrep` for the first; none for the playbook |
+| Application source code (file/resource access) | Race Condition (TOCTOU) | `python3 detectors/race-condition/playbook.py --language <lang>` (playbook only — see note below; no deterministic half exists) | none |
 | Package manifests/lockfiles | Dependency | `python3 detectors/dependency/scanner.py <project> [--artifact-type package-lock]` | `osv-scanner` (`brew install osv-scanner`) + network |
 | `Dockerfile*` | Docker | `python3 detectors/docker/scanner.py <project> [--artifact-type dockerfile]` | `trivy` (`brew install trivy`) |
 | Kubernetes YAML / Helm charts | Kubernetes | `python3 detectors/kubernetes/scanner.py <manifests_or_chart>` | `trivy`; `helm` too for chart-specific checks |
@@ -56,13 +57,14 @@ what else applies** — secrets can leak into any file type.
 | `.github/workflows/*`, `.gitlab-ci.yml`, `Jenkinsfile` | CI/CD Pipeline | `python3 detectors/cicd/scanner.py <repo>` (deterministic half) **and** `python3 detectors/cicd/playbook.py --format <github-actions\|gitlab-ci\|jenkinsfile>` (playbook half — Jenkinsfile has zero deterministic coverage) | `checkov` for the first; none for the playbook |
 | Any repo (SBOM/provenance/signing) | Supply Chain | `python3 detectors/supply-chain/scanner.py <path>`, `python3 detectors/supply-chain/sbom_scanner.py .`, `python3 detectors/supply-chain/scorecard_wrapper.py .` | `scorecard` (`brew install scorecard`) for the last one only |
 
-**Playbook note (Auth, CI/CD Pipeline)**: `playbook.py` isn't a script
-you parse — it prints a checklist that *you* apply directly while
-reading the code/config, for weaknesses these sub-skills' own
-deterministic tooling (Semgrep, Checkov) doesn't reach well. When you
-find something, construct a `Finding`-shaped dict yourself (same
-fields any other detector produces) and validate it with
-`playbook.validate_agent_finding(finding)`. This still counts as
+**Playbook note (Auth, CI/CD Pipeline, Race Condition)**: `playbook.py`
+isn't a script you parse — it prints a checklist that *you* apply
+directly while reading the code/config, for weaknesses these
+sub-skills' own deterministic tooling (Semgrep, Checkov) doesn't reach
+well, or (Race Condition) because no deterministic tooling exists for
+this class at all. When you find something, construct a `Finding`-shaped
+dict yourself (same fields any other detector produces) and validate it
+with `playbook.validate_agent_finding(finding)`. This still counts as
 running the real detector, not a substitute for one — the checklist
 itself is the versioned, reviewed artifact, same as any other
 detector's ruleset.

@@ -17,6 +17,7 @@
   "CWE-327": { "title": "Use of a Broken or Risky Cryptographic Algorithm" },
   "CWE-345": { "title": "Insufficient Verification of Data Authenticity" },
   "CWE-362": { "title": "Concurrent Execution using Shared Resource with Improper Synchronization ('Race Condition')" },
+  "CWE-367": { "title": "Time-of-check Time-of-use (TOCTOU) Race Condition" },
   "CWE-384": { "title": "Session Fixation" },
   "CWE-400": { "title": "Uncontrolled Resource Consumption" },
   "CWE-494": { "title": "Download of Code Without Integrity Check" },
