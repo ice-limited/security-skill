@@ -36,6 +36,25 @@ rule existed).
   `ruamel.yaml`) was missing from `docs/usage-guide.md`/`.th.md`'s
   setup section — added.
 
+### Fixed
+
+- **Real gap in both interactive-agent adapters** (`adapters/claude-code/security-review/SKILL.md`,
+  `adapters/agents-md/AGENTS.md`), found by the user asking exactly the
+  right question: an AI agent invoking a bare `python3
+  detectors/secret/scanner.py ...` from a *different* repo's session
+  doesn't resolve to `security-skill/`'s own `.venv` — it uses whatever
+  `python3` is first on that shell's `PATH`, so `jsonschema` and
+  similar imports fail. Worse, `semgrep`/`checkov` specifically are
+  installed only inside that `.venv` (unlike `trivy`/`osv-scanner`/
+  `scorecard`/`helm`, real system binaries already on `PATH`), so even
+  a working `python3` still can't find them as subprocesses. Fixed by
+  adding one explicit step to both adapters: activate
+  `security-skill/.venv` once per session before running any command —
+  this makes `python3`/`python` resolve to the venv's interpreter *and*
+  puts `.venv/bin` on `PATH`, fixing both problems at once. Added a
+  regression guard to each adapter's own static test
+  (`test_venv_activation_instruction_present`), mutation-tested.
+
 ## [1.0.0] - 2026-07-25
 
 All 24 plans in the security-skill-workspace roadmap are `done` as of

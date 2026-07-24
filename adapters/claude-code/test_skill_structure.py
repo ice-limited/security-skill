@@ -86,6 +86,14 @@ class SkillMdFrontmatterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             _parse_frontmatter("no frontmatter here at all\n")
 
+    def test_venv_activation_instruction_present(self) -> None:
+        # Real gap found in practice (not hypothetical): a bare `python3`
+        # invocation from a different repo's session doesn't resolve to
+        # security-skill/'s own .venv, so jsonschema/semgrep/checkov
+        # aren't found. Regression guard for that fix's presence.
+        text = SKILL_MD.read_text(encoding="utf-8")
+        self.assertIn(".venv/bin/activate", text)
+
 
 class ReferenceDocCoverageTests(unittest.TestCase):
     def test_every_sub_skill_has_a_reference_doc(self) -> None:

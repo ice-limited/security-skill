@@ -94,6 +94,14 @@ class AgentsMdContentTests(unittest.TestCase):
         text = _normalize_whitespace(AGENTS_MD.read_text(encoding="utf-8"))
         self.assertIn("ask the user where it is", text)
 
+    def test_venv_activation_instruction_present(self) -> None:
+        # Real gap: a bare `python3` invocation from a different repo's
+        # session doesn't resolve to security-skill/'s own .venv, so
+        # jsonschema/semgrep/checkov aren't found. Regression guard for
+        # that fix's presence.
+        text = AGENTS_MD.read_text(encoding="utf-8")
+        self.assertIn(".venv/bin/activate", text)
+
 
 if __name__ == "__main__":
     unittest.main()

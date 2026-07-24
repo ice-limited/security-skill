@@ -49,6 +49,46 @@ environment — one belonging to a different project entirely), silently
 running detector code the user never pointed it at. Asking costs one
 turn; guessing risks running the wrong code without anyone noticing.
 
+## Before running any command: activate the venv, if one exists
+
+You are almost always reviewing a *different* repo than
+`security-skill/` itself — the target repo's own Python environment
+(if it has one) is irrelevant here; every command below needs
+`security-skill/`'s own dependencies (`jsonschema`, `semgrep`,
+`checkov`, ...), which live in `security-skill/`'s own `.venv`, not the
+target repo's.
+
+**Real gap found in practice, not hypothetical**: running a bare
+`python3 detectors/secret/scanner.py ...` uses whatever `python3` is
+first on your current shell's `PATH` — almost never
+`security-skill/.venv`'s own interpreter — so `jsonschema` and similar
+imports fail with a raw `ModuleNotFoundError`. Worse, `semgrep` and
+`checkov` specifically are installed *only* inside that `.venv` (unlike
+`trivy`/`osv-scanner`/`scorecard`/`helm`, which are typically real
+system binaries already on `PATH`) — so even a working `python3` still
+can't find them as subprocesses unless the venv's own `bin/` is on
+`PATH` too.
+
+Fix, once per session (not once per command): if
+`security-skill/.venv/` exists, activate it before running anything
+else in this skill —
+
+```
+source <security-skill-checkout>/.venv/bin/activate   # macOS/Linux
+```
+```
+<security-skill-checkout>\.venv\Scripts\Activate.ps1   # Windows PowerShell
+```
+
+This single step makes `python3`/`python` resolve to the venv's own
+interpreter *and* puts `.venv/bin` on `PATH` for the rest of the
+session, so both problems above disappear at once — every command
+below can then be run exactly as written, no per-command prefixing
+needed. If `.venv/` doesn't exist at all, fall back to system
+`python3`/`python` and note in your review that some detectors may be
+unavailable until `install.sh`/`install.ps1`/`install.bat` has been run
+there.
+
 ## Step 1 — identify what's being reviewed
 
 Look at the files actually in scope (the diff, the files the user

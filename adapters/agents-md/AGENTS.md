@@ -37,6 +37,30 @@ filesystem search could land on the wrong checkout (different clone,
 branch, or an unrelated project), silently running code the user never
 pointed you at.
 
+### Before running any command: activate the venv, if one exists
+
+You're almost always reviewing a *different* repo than `security-skill/`
+itself — its dependencies (`jsonschema`, `semgrep`, `checkov`, ...) live
+in `security-skill/`'s own `.venv`, not anything in the repo you're
+reviewing. A bare `python3 detectors/secret/scanner.py ...` uses
+whatever `python3` is first on your shell's `PATH`, almost never that
+`.venv` — so imports like `jsonschema` fail. Worse, `semgrep`/`checkov`
+specifically are installed *only* inside that `.venv` (unlike
+`trivy`/`osv-scanner`/`scorecard`/`helm`, which are typically real
+system binaries already on `PATH`), so even a working `python3` still
+can't find them as subprocesses unless the venv's own `bin/` is on
+`PATH` too.
+
+Fix, once per session: if `security-skill/.venv/` exists, activate it
+first — `source <security-skill-checkout>/.venv/bin/activate`
+(macOS/Linux) or `<security-skill-checkout>\.venv\Scripts\Activate.ps1`
+(Windows PowerShell). This makes `python3`/`python` resolve to the
+venv's interpreter *and* puts `.venv/bin` on `PATH`, so every command
+below then works exactly as written. If `.venv/` doesn't exist, fall
+back to system `python3`/`python` and note that some detectors may be
+unavailable until `install.sh`/`install.ps1`/`install.bat` has been run
+there.
+
 ### Step 1 — identify what's in scope, run the matching detector(s)
 
 A review often spans several rows — run every detector that applies,
