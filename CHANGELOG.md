@@ -67,6 +67,15 @@ rule existed).
   Cursor reads `AGENTS.md` natively in Agent mode, so `.cursor/rules/*.mdc`
   was deferred rather than built (a genuine future enhancement, not a
   gap this plan needed to close).
+- **019 — Antigravity / Grok Build Adapter**: no new content authored.
+  Research (confirmed for Grok Build by a real, first-hand `grok inspect`
+  run in this environment) found both tools already read 017/018's
+  existing content directly. `adapters/antigravity/skills/security-review`
+  is a symlink to 017's content (Antigravity's own Skill format is
+  structurally identical, discovered from a different directory);
+  `adapters/grok-build/` documents Grok's native reuse with no wiring
+  needed at all. Antigravity itself couldn't be verified first-hand (no
+  CLI in this environment) — documented as an honest, open gap.
 - **021 — Knowledge Base Freshness Checker**: verifies `knowledge/`
   reference data against upstream sources (`knowledge/check_freshness.py`).
 - **022 — Cross-Platform Compatibility**: audited and fixed macOS/
