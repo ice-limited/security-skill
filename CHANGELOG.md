@@ -1,0 +1,88 @@
+# Changelog
+
+All notable changes to this repo (the skill implementation itself) are
+recorded here. Changes to the workspace (planning docs, process,
+license, repo config) are recorded in
+[security-skill-workspace/CHANGELOG.md](https://github.com/ice-limited/security-skill-workspace/blob/main/CHANGELOG.md)
+(separate repo).
+
+Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
+Backfilled 2026-07-24 (see `security-skill-workspace` AGENTS.md rule 10:
+every change now gets an entry here going forward, in the same turn
+it's made — this backfill covers everything implemented before that
+rule existed).
+
+## [Unreleased]
+
+### Added
+
+- **License** — Business Source License 1.1-style source-available
+  license (Licensor: Ice Limited), modified to have no Change Date/
+  Change License (a permanent restriction, not the standard License's
+  guaranteed eventual open-sourcing). See `LICENSE.md`.
+- **001 — Finding Schema & Multi-format Output**: `finding.schema.json`/
+  `scan-report.schema.json`, JSON/Markdown/HTML renderers.
+- **002 — Knowledge Base & Standards Mapping**: OWASP/CWE/NIST-SSDF/ASVS
+  reference data under `knowledge/`.
+- **003 — Policy Engine & Severity-to-Action Config**: `policy/engine.py`,
+  default + per-repo policy override.
+- **004 — Decision Layer**: exact-duplicate dedup + exception-based
+  suppression (`decision/`).
+- **005 — Repo Scaffolding & Core+Adapter Architecture**: formalized the
+  directory-per-concern convention; `common/` (shared stream-reconfigure
+  and schema-validation utilities).
+- **006 — Secret Detection Skill**: pattern + entropy-based hardcoded
+  secret detection, 8 rules (`detectors/secret/`).
+- **007 — Code Review Skill (Injection/SSRF classes)**: Semgrep-wrapped
+  SQLi/XSS/SSRF/Command Injection detection (`detectors/code-review/`).
+- **008 — Dependency Skill**: OSV-based CVE/license/deprecation scanning
+  (`detectors/dependency/`).
+- **009 — Docker Skill**: Trivy-wrapped Dockerfile checks
+  (`detectors/docker/`).
+- **010 — Kubernetes Skill**: Trivy/Helm-based manifest checks
+  (`detectors/kubernetes/`).
+- **011 — IaC Skill**: Checkov-wrapped Terraform/CloudFormation/Ansible
+  checks (`detectors/iac/`); `common/checkov_wrapper.py` extracted.
+- **012 — API Skill**: Spectral (OpenAPI spec-lint) + Semgrep (open
+  redirect) + deterministic-extraction/playbook hybrid for auth
+  cross-reference (`detectors/api/`) — first Node.js/npm dependency.
+- **013 — CI/CD Pipeline Skill**: Checkov + playbook hybrid for GitHub
+  Actions/GitLab CI/Jenkinsfile (`detectors/cicd/`).
+- **014 — Supply Chain Skill**: SBOM validation, OpenSSF Scorecard,
+  GitHub Actions config-presence checks (`detectors/supply-chain/`).
+  Phase 1 (Detection sub-skills, 006–014/023) complete.
+- **015 — Action Layer: Recommendations & Auto-fix**: `Remediation`
+  record (`schema/remediation.schema.json`), safety-tier assignment,
+  real computed patch generation for `secret.*` findings
+  (`action/remediation.py`).
+- **016 — Action Layer: Ticketing, Notifications & Gate Enforcement**:
+  `Integration` record (`schema/integration.schema.json`), gate-verdict/
+  ticket/notification payload generation from a policy verdict
+  (`action/integrations.py`).
+- **017 — Claude Code Adapter**: `adapters/claude-code/security-review/`
+  — a router Skill + one reference doc per sub-skill, using Claude
+  Code's progressive-disclosure mechanism.
+- **021 — Knowledge Base Freshness Checker**: verifies `knowledge/`
+  reference data against upstream sources (`knowledge/check_freshness.py`).
+- **022 — Cross-Platform Compatibility**: audited and fixed macOS/
+  Windows/Linux compatibility across every module (explicit UTF-8
+  encoding everywhere, `.gitattributes` LF normalization, stdin/stdout/
+  stderr reconfiguration).
+- **023 — AuthN/AuthZ Code Review Skill**: Semgrep-subset (JWT bypass) +
+  playbook hybrid (`detectors/auth/`).
+
+### Fixed
+
+- **006 (Secret Detection)**, found during 015's implementation:
+  `generic-api-key`/`azure-ad-client-secret` rules computed
+  `location.startByte`/`endByte` from the whole regex match instead of
+  the narrower capture group, producing an over-wide (and, downstream,
+  incorrect) byte span. Fixed at the source in
+  `detectors/secret/scanner.py`, with regression tests.
+
+### Not yet implemented
+
+- **018 — AGENTS.md Adapter**, **019 — Antigravity/Grok Build Adapter**,
+  **020 — Test Fixtures & Evaluation Corpus**, **024 — Race Condition
+  Code Review Skill** — all still `todo`, see `plans/` in the workspace
+  repo for current status.
