@@ -8,6 +8,26 @@ Designed to work across Claude Code, Codex, OpenCode, Antigravity, Grok
 Build, Cursor, and similar AI coding agents: one tool-agnostic core, thin
 per-tool adapters.
 
+## Usage
+
+Full walkthrough: [`docs/usage-guide.md`](docs/usage-guide.md) (setup,
+running each detector, the Decision/Policy/Action layers, installing
+the AI-agent adapters, running the test suite) — ภาษาไทย:
+[`docs/usage-guide.th.md`](docs/usage-guide.th.md). The short version:
+
+```
+pip install -r schema/requirements.txt
+python3 detectors/secret/scanner.py path/to/file.py   # -> a JSON array of Finding objects
+python3 run_all_tests.py                              # run the whole test suite, one command
+```
+
+Each detector wraps a real external tool where one exists (Semgrep,
+Trivy, Checkov, OSV-Scanner, Scorecard) — see the guide's setup section
+for which tool each sub-skill needs. To have an AI coding agent invoke
+these automatically, install the matching adapter from `adapters/`
+(Claude Code, AGENTS.md-convention tools, Antigravity, or Grok Build —
+see `adapters/README.md`).
+
 ## Status
 
 Early implementation. Architecture, planning, and feature specs live in the
