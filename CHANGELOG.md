@@ -14,6 +14,11 @@ rule existed).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-07-25
+
+Patch release: install automation, doc fixes, and a real adapter bug
+found by a user question.
+
 ### Added
 
 - **`install.sh` / `install.ps1` / `install.bat`** — one-command setup
