@@ -14,6 +14,20 @@ rule existed).
 
 ## [Unreleased]
 
+### Added
+
+- **Windows install instructions for the adapter symlink step**
+  (`docs/usage-guide.md`/`.th.md` §7.1 Claude Code, §7.3 Antigravity),
+  found by another good user question: a real Windows symlink
+  (`mklink`/`New-Item -ItemType SymbolicLink`) needs either an elevated
+  prompt or Developer Mode, which the guide never mentioned for
+  Windows users at all. Documented a **junction**
+  (`mklink /J`/`New-Item -ItemType Junction`) as the practical default
+  instead — same effect for a local directory, no elevation or
+  Developer Mode required — with the real symlink commands kept as a
+  fallback for the one case a junction can't cover (a checkout reachable
+  only via a mapped network path).
+
 ## [1.0.1] - 2026-07-25
 
 Patch release: install automation, doc fixes, and a real adapter bug

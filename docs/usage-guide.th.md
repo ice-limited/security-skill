@@ -232,9 +232,33 @@ mkdir -p ~/.claude/skills
 ln -s "$SECURITY_SKILL/adapters/claude-code/security-review" ~/.claude/skills/security-review
 ```
 
+**Windows**: symlink จริง (`mklink`/`New-Item -ItemType SymbolicLink`)
+ต้องมีอย่างใดอย่างหนึ่ง: เปิด terminal แบบ elevated (Administrator)
+หรือเปิด Developer Mode ไว้ (Settings → Privacy & Security → For
+developers) — ดังนั้นทางเลือกที่ใช้งานได้จริงโดยไม่ต้องยุ่งกับสองอย่างนี้
+คือ **junction** ซึ่งให้ผลเหมือนกันสำหรับ directory ในเครื่องเดียวกัน
+(ข้อจำกัดเดียวคือใช้ข้าม network/UNC path ไม่ได้ ซึ่งไม่กระทบ use case นี้):
+
+```
+:: cmd.exe (ระดับ project; ระดับ personal ใช้ %USERPROFILE%\.claude\skills แทน)
+mkdir .claude\skills
+mklink /J ".claude\skills\security-review" "%SECURITY_SKILL%\adapters\claude-code\security-review"
+```
+```
+# PowerShell (ระดับ project)
+New-Item -ItemType Directory -Force .claude\skills | Out-Null
+New-Item -ItemType Junction -Path ".claude\skills\security-review" -Target "$Env:SECURITY_SKILL\adapters\claude-code\security-review"
+```
+
+ถ้าจำเป็นต้องใช้ symlink จริงแทน junction (เช่น checkout อยู่คนละ volume
+ที่เข้าถึงผ่าน mapped network path เท่านั้น) ให้เปิด elevated prompt
+(หรือเปิด Developer Mode) แล้วเปลี่ยน `/J` เป็น `/D` (`mklink /D ...`)
+หรือใช้ `-ItemType SymbolicLink` ใน PowerShell
+
 **ตรวจสอบ**: เริ่ม session Claude Code ใน target repo แล้วขอให้ทำ security
 review — skill ควร trigger เองอัตโนมัติ ถ้าดูเหมือนไม่ทำงาน ให้ตรวจสอบว่า
-symlink resolve ถูกต้อง (`ls -la .claude/skills/security-review/SKILL.md`
+link resolve ถูกต้อง (`ls -la .claude/skills/security-review/SKILL.md`
+หรือบน Windows ใช้ `dir .claude\skills\security-review\SKILL.md`
 ควรเห็นเนื้อหาจริง ไม่ใช่ broken link)
 
 ### 7.2 Codex / OpenCode / Cursor (convention แบบ AGENTS.md)
@@ -268,6 +292,20 @@ Antigravity อ่าน Skill format ของตัวเองจาก `.age
 # รันจากภายใน target repo
 mkdir -p .agents/skills
 ln -s "$SECURITY_SKILL/adapters/antigravity/skills/security-review" .agents/skills/security-review
+```
+
+**Windows**: เหตุผลเดียวกับ §7.1 — ใช้ junction แทน symlink (ไม่ต้องมี
+elevation/Developer Mode สำหรับ directory ในเครื่องเดียวกัน):
+
+```
+:: cmd.exe
+mkdir .agents\skills
+mklink /J ".agents\skills\security-review" "%SECURITY_SKILL%\adapters\antigravity\skills\security-review"
+```
+```
+# PowerShell
+New-Item -ItemType Directory -Force .agents\skills | Out-Null
+New-Item -ItemType Junction -Path ".agents\skills\security-review" -Target "$Env:SECURITY_SKILL\adapters\antigravity\skills\security-review"
 ```
 
 (การรองรับ `AGENTS.md` สำหรับ Antigravity มาจาก §7.2 ข้างบนแล้ว — มันอ่าน

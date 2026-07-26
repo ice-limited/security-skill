@@ -242,10 +242,36 @@ mkdir -p ~/.claude/skills
 ln -s "$SECURITY_SKILL/adapters/claude-code/security-review" ~/.claude/skills/security-review
 ```
 
+**Windows**: a real symlink (`mklink`/`New-Item -ItemType SymbolicLink`)
+needs either an elevated (Administrator) prompt or Developer Mode
+turned on (Settings → Privacy & Security → For developers), so a
+**junction** is the practical default instead — same effect for a local
+directory, no elevation and no Developer Mode required (its one real
+limit, irrelevant here, is that it can't point across a network/UNC
+path):
+
+```
+:: cmd.exe — project-level (personal-level: use %USERPROFILE%\.claude\skills instead)
+mkdir .claude\skills
+mklink /J ".claude\skills\security-review" "%SECURITY_SKILL%\adapters\claude-code\security-review"
+```
+```
+# PowerShell — project-level
+New-Item -ItemType Directory -Force .claude\skills | Out-Null
+New-Item -ItemType Junction -Path ".claude\skills\security-review" -Target "$Env:SECURITY_SKILL\adapters\claude-code\security-review"
+```
+
+If you specifically need a real symlink instead of a junction (e.g. the
+checkout genuinely lives on a different volume reachable only via a
+mapped network path), open an elevated prompt (or enable Developer
+Mode) and swap `/J` for `/D` (`mklink /D ...`), or
+`-ItemType SymbolicLink` in PowerShell.
+
 **Verify**: start a Claude Code session in the target repo and ask for
 a security review — the skill should trigger automatically. If it
-doesn't seem to activate, confirm the symlink resolves
-(`ls -la .claude/skills/security-review/SKILL.md` should show real
+doesn't seem to activate, confirm the link resolves
+(`ls -la .claude/skills/security-review/SKILL.md`, or on Windows
+`dir .claude\skills\security-review\SKILL.md`, should show real
 content, not a broken link).
 
 ### 7.2 Codex / OpenCode / Cursor (AGENTS.md convention)
@@ -279,6 +305,20 @@ legacy `.agent/skills/`):
 # From inside the target repo
 mkdir -p .agents/skills
 ln -s "$SECURITY_SKILL/adapters/antigravity/skills/security-review" .agents/skills/security-review
+```
+
+**Windows**: same junction-over-symlink reasoning as §7.1 (no
+elevation/Developer Mode needed for a local directory):
+
+```
+:: cmd.exe
+mkdir .agents\skills
+mklink /J ".agents\skills\security-review" "%SECURITY_SKILL%\adapters\antigravity\skills\security-review"
+```
+```
+# PowerShell
+New-Item -ItemType Directory -Force .agents\skills | Out-Null
+New-Item -ItemType Junction -Path ".agents\skills\security-review" -Target "$Env:SECURITY_SKILL\adapters\antigravity\skills\security-review"
 ```
 
 (`AGENTS.md` coverage for Antigravity comes from §7.2 above — it reads
